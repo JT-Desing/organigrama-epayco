@@ -48,106 +48,157 @@ alter table public.people enable row level security;
 alter table public.authorized_users enable row level security;
 alter table public.change_history enable row level security;
 
-create or replace function public.current_user_email()
+create schema if not exists private;
+
+create or replace function private.current_user_email()
 returns text
 language sql
 stable
+set search_path = ''
 as $$
   select lower(coalesce(auth.jwt() ->> 'email', ''));
 $$;
 
-create or replace function public.is_epayco_email()
+create or replace function private.is_epayco_email()
 returns boolean
 language sql
 stable
+set search_path = ''
 as $$
-  select public.current_user_email() like '%@epayco.com';
+  select private.current_user_email() like '%@epayco.com';
 $$;
 
-create or replace function public.is_authorized()
+create or replace function private.is_authorized()
 returns boolean
 language sql
 stable
 security definer
-set search_path = public
+set search_path = public, private
 as $$
-  select public.is_epayco_email()
+  select private.is_epayco_email()
     or exists (
     select 1
     from public.authorized_users
-    where lower(email) = public.current_user_email()
+    where lower(email) = private.current_user_email()
       and status = 'active'
   );
 $$;
 
-create or replace function public.is_admin()
+create or replace function private.is_admin()
 returns boolean
 language sql
 stable
 security definer
-set search_path = public
+set search_path = public, private
 as $$
-  select public.current_user_email() = 'julian.tobon@epayco.com'
+  select private.current_user_email() = 'julian.tobon@epayco.com'
     or exists (
     select 1
     from public.authorized_users
-    where lower(email) = public.current_user_email()
+    where lower(email) = private.current_user_email()
       and is_admin = true
       and status = 'active'
   );
 $$;
 
+revoke all on schema private from public;
+grant usage on schema private to authenticated;
+revoke execute on all functions in schema private from public;
+grant execute on function private.current_user_email() to authenticated;
+grant execute on function private.is_epayco_email() to authenticated;
+grant execute on function private.is_authorized() to authenticated;
+grant execute on function private.is_admin() to authenticated;
+
 drop policy if exists "authorized users read departments" on public.departments;
 drop policy if exists "admins write departments" on public.departments;
+drop policy if exists "admins insert departments" on public.departments;
+drop policy if exists "admins update departments" on public.departments;
+drop policy if exists "admins delete departments" on public.departments;
 drop policy if exists "authorized users read people" on public.people;
 drop policy if exists "admins write people" on public.people;
+drop policy if exists "admins insert people" on public.people;
+drop policy if exists "admins update people" on public.people;
+drop policy if exists "admins delete people" on public.people;
 drop policy if exists "users read own authorization" on public.authorized_users;
 drop policy if exists "admins manage authorization" on public.authorized_users;
+drop policy if exists "admins insert authorization" on public.authorized_users;
+drop policy if exists "admins update authorization" on public.authorized_users;
+drop policy if exists "admins delete authorization" on public.authorized_users;
 drop policy if exists "authorized users read history" on public.change_history;
 drop policy if exists "admins write history" on public.change_history;
 
 create policy "authorized users read departments"
 on public.departments for select
 to authenticated
-using (public.is_authorized());
+using (private.is_authorized());
 
-create policy "admins write departments"
-on public.departments for all
+create policy "admins insert departments"
+on public.departments for insert
 to authenticated
-using (public.is_admin())
-with check (public.is_admin());
+with check (private.is_admin());
+
+create policy "admins update departments"
+on public.departments for update
+to authenticated
+using (private.is_admin())
+with check (private.is_admin());
+
+create policy "admins delete departments"
+on public.departments for delete
+to authenticated
+using (private.is_admin());
 
 create policy "authorized users read people"
 on public.people for select
 to authenticated
-using (public.is_authorized());
+using (private.is_authorized());
 
-create policy "admins write people"
-on public.people for all
+create policy "admins insert people"
+on public.people for insert
 to authenticated
-using (public.is_admin())
-with check (public.is_admin());
+with check (private.is_admin());
+
+create policy "admins update people"
+on public.people for update
+to authenticated
+using (private.is_admin())
+with check (private.is_admin());
+
+create policy "admins delete people"
+on public.people for delete
+to authenticated
+using (private.is_admin());
 
 create policy "users read own authorization"
 on public.authorized_users for select
 to authenticated
-using (lower(email) = public.current_user_email() or public.is_admin());
+using (lower(email) = private.current_user_email() or private.is_admin());
 
-create policy "admins manage authorization"
-on public.authorized_users for all
+create policy "admins insert authorization"
+on public.authorized_users for insert
 to authenticated
-using (public.is_admin())
-with check (public.is_admin());
+with check (private.is_admin());
+
+create policy "admins update authorization"
+on public.authorized_users for update
+to authenticated
+using (private.is_admin())
+with check (private.is_admin());
+
+create policy "admins delete authorization"
+on public.authorized_users for delete
+to authenticated
+using (private.is_admin());
 
 create policy "authorized users read history"
 on public.change_history for select
 to authenticated
-using (public.is_authorized());
+using (private.is_authorized());
 
 create policy "admins write history"
 on public.change_history for insert
 to authenticated
-with check (public.is_admin());
+with check (private.is_admin());
 
 create index if not exists people_department_id_idx on public.people(department_id);
 create index if not exists people_manager_id_idx on public.people(manager_id);
@@ -158,3 +209,8 @@ create index if not exists departments_parent_id_idx on public.departments(paren
 insert into public.authorized_users (email, is_admin)
 values ('julian.tobon@epayco.com', true)
 on conflict (email) do update set is_admin = excluded.is_admin, status = 'active';
+
+drop function if exists public.is_admin();
+drop function if exists public.is_authorized();
+drop function if exists public.is_epayco_email();
+drop function if exists public.current_user_email();
