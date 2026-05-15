@@ -45,8 +45,21 @@ import { buildFlowModel, normalizeCatalog } from './lib/orgLayout'
 import './App.css'
 
 const supabase = createSupabaseClient()
-const corporateDomain = import.meta.env.VITE_CORPORATE_DOMAIN || 'ipq.com.co'
+const corporateDomain = import.meta.env.VITE_CORPORATE_DOMAIN || 'epayco.com'
+const adminEmail = (import.meta.env.VITE_ADMIN_EMAIL || 'julian.tobon@epayco.com').toLowerCase()
 const localDemoMode = !hasSupabaseConfig && import.meta.env.DEV
+
+function normalizeCorporateEmail(value, fallbackName = '') {
+  const raw = String(value || fallbackName || '').trim().toLowerCase()
+  if (!raw) return ''
+  const [localPart] = raw.split('@')
+  const normalizedLocalPart = localPart
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '.')
+    .replace(/^\.+|\.+$/g, '')
+  return normalizedLocalPart ? `${normalizedLocalPart}@${corporateDomain}` : ''
+}
 
 function DepartmentNode({ data }) {
   return (
@@ -108,6 +121,7 @@ function App() {
   const [people, setPeople] = useState([])
   const [departments, setDepartments] = useState([])
   const [history, setHistory] = useState([])
+  const [sidebarOpen, setSidebarOpen] = useState(true)
   const [selectedPerson, setSelectedPerson] = useState(null)
   const [query, setQuery] = useState('')
   const deferredQuery = useDeferredValue(query)
@@ -128,18 +142,18 @@ function App() {
     fetch('/src/data/ipqSeed.json')
       .then((response) => response.json())
       .then((demoSeed) => {
-      setPeople(demoSeed.people)
-      setDepartments(demoSeed.departments)
-      setHistory([
-        {
-          id: 'hist-demo',
-          action: 'Carga inicial demo',
-          actor: 'sistema',
-          target: `${demoSeed.people.length} personas / ${demoSeed.departments.length} departamentos`,
-          created_at: new Date().toISOString(),
-        },
-      ])
-    })
+        setPeople(demoSeed.people)
+        setDepartments(demoSeed.departments)
+        setHistory([
+          {
+            id: 'hist-demo',
+            action: 'Carga inicial demo',
+            actor: 'sistema',
+            target: `${demoSeed.people.length} personas / ${demoSeed.departments.length} departamentos`,
+            created_at: new Date().toISOString(),
+          },
+        ])
+      })
   }, [])
 
   useEffect(() => {
@@ -151,6 +165,13 @@ function App() {
     })
     return () => listener.subscription.unsubscribe()
   }, [])
+
+  const isAdmin = useMemo(() => {
+    const email = session?.user?.email?.toLowerCase() || ''
+    return demoMode || email === adminEmail
+  }, [demoMode, session])
+  const effectiveMode = isAdmin ? mode : 'org'
+
 
   useEffect(() => {
     if (!supabase || !session) return
@@ -257,7 +278,7 @@ function App() {
     setAuthLoading(true)
     const { error } = await supabase.auth.signInWithOtp({
       email,
-      options: { emailRedirectTo: window.location.origin },
+      options: { emailRedirectTo: window.location.href.split(/[?#]/)[0] },
     })
     setAuthLoading(false)
     setAuthNotice(error ? error.message : 'Revisa tu correo para ingresar con magic link.')
@@ -275,7 +296,7 @@ function App() {
       {
         id: crypto.randomUUID(),
         action,
-        actor: session?.user?.email || 'admin.demo@ipq.com.co',
+        actor: session?.user?.email || 'admin.demo@epayco.com',
         target,
         created_at: new Date().toISOString(),
       },
@@ -293,6 +314,7 @@ function App() {
   }
 
   const confirmImport = async () => {
+    if (!isAdmin) return
     if (!importState) return
     const { nextPeople, nextDepartments } = applyImport(importState.rows, normalized.people, normalized.departments)
 
@@ -308,10 +330,12 @@ function App() {
 
   const saveManualPerson = (event) => {
     event.preventDefault()
+    if (!isAdmin) return
     const person = {
       ...adminDraft,
       id: adminDraft.id || crypto.randomUUID(),
       department_id: adminDraft.department_id || departments[0]?.id,
+      email: normalizeCorporateEmail(adminDraft.email, adminDraft.full_name),
       updated_at: new Date().toISOString(),
     }
     const exists = people.some((item) => item.id === person.id)
@@ -327,7 +351,7 @@ function App() {
           <div className="brand-lock">
             <ShieldCheck size={28} />
           </div>
-          <p className="eyebrow">Organigrama privado IPQ</p>
+          <p className="eyebrow">Organigrama privado ePayco</p>
           <h1 id="login-title">Ingreso seguro sin contraseñas manuales</h1>
           <p className="login-copy">
             Accede con magic link usando tu correo corporativo autorizado. Los datos se consultan desde Supabase
@@ -359,15 +383,18 @@ function App() {
 
   return (
     <ReactFlowProvider>
-      <div className="app-shell">
+      <div className={clsx('app-shell', !sidebarOpen && 'is-sidebar-collapsed')}>
         <TopBar
-          mode={mode}
+          mode={effectiveMode}
           setMode={setMode}
           demoMode={demoMode}
           sessionEmail={session?.user?.email}
           signOut={signOut}
+          isAdmin={isAdmin}
+          sidebarOpen={sidebarOpen}
+          onToggleSidebar={() => setSidebarOpen((open) => !open)}
         />
-        <aside className="control-rail" aria-label="Filtros del organigrama">
+        <aside className="control-rail" aria-label="Filtros del organigrama" aria-hidden={!sidebarOpen}>
           <div className="metric-grid">
             <Metric icon={Users} label="Activas" value={metrics.activePeople} />
             <Metric icon={Clock3} label="Inactivas" value={metrics.inactivePeople} />
@@ -425,7 +452,7 @@ function App() {
 
         <main className="workspace">
           {busyMessage && <div className="busy-banner">{busyMessage}</div>}
-          {mode === 'org' ? (
+          {effectiveMode === 'org' ? (
             <OrgCanvas flowModel={flowModel} visiblePeople={renderedPeople} selectedDepartmentId={departmentFilter} />
           ) : (
             <AdminPanel
@@ -454,6 +481,7 @@ function App() {
               setMode('admin')
               setSelectedPerson(null)
             }}
+            canEdit={isAdmin}
           />
         )}
       </div>
@@ -461,13 +489,21 @@ function App() {
   )
 }
 
-function TopBar({ mode, setMode, demoMode, sessionEmail, signOut }) {
+function TopBar({ mode, setMode, demoMode, sessionEmail, signOut, isAdmin, sidebarOpen, onToggleSidebar }) {
   return (
     <header className="topbar">
       <div className="topbar__brand">
-        <span className="logo-mark">IPQ</span>
+        <button
+          type="button"
+          className="sidebar-toggle"
+          onClick={onToggleSidebar}
+          aria-label={sidebarOpen ? 'Cerrar menu lateral' : 'Abrir menu lateral'}
+        >
+          {sidebarOpen ? <X size={17} /> : <Filter size={17} />}
+        </button>
+        <span className="logo-mark">eP</span>
         <div>
-          <strong>Organigrama interno</strong>
+          <strong>Organigrama ePayco</strong>
           <small>{demoMode ? 'Modo demo local' : sessionEmail}</small>
         </div>
       </div>
@@ -476,10 +512,12 @@ function TopBar({ mode, setMode, demoMode, sessionEmail, signOut }) {
           <LayoutDashboard size={17} />
           Canvas
         </button>
-        <button type="button" className={clsx(mode === 'admin' && 'is-active')} onClick={() => setMode('admin')}>
-          <PanelRightOpen size={17} />
-          Administracion
-        </button>
+        {isAdmin && (
+          <button type="button" className={clsx(mode === 'admin' && 'is-active')} onClick={() => setMode('admin')}>
+            <PanelRightOpen size={17} />
+            Administracion
+          </button>
+        )}
       </nav>
       <div className="topbar__actions">
         <span className="privacy-pill">
@@ -593,7 +631,7 @@ function OrgCanvas({ flowModel, visiblePeople, selectedDepartmentId }) {
   )
 }
 
-function PersonDrawer({ person, people, onClose, onEdit }) {
+function PersonDrawer({ person, people, onClose, onEdit, canEdit }) {
   const manager = people.find((item) => item.id === person.manager_id)
   return (
     <aside className="drawer" aria-label="Detalle de persona">
@@ -635,9 +673,11 @@ function PersonDrawer({ person, people, onClose, onEdit }) {
           <dd>{formatDate(person.updated_at)}</dd>
         </div>
       </dl>
-      <button type="button" className="primary-action" onClick={() => onEdit(person)}>
-        Editar en administracion
-      </button>
+      {canEdit && (
+        <button type="button" className="primary-action" onClick={() => onEdit(person)}>
+          Editar en administracion
+        </button>
+      )}
     </aside>
   )
 }
@@ -864,7 +904,8 @@ function applyImport(rows, currentPeople, currentDepartments) {
 
     const key = (row.email || row.full_name).toLowerCase()
     importedKeys.add(key)
-    const existing = row.email ? peopleByEmail.get(row.email.toLowerCase()) : peopleByName.get(row.full_name.toLowerCase())
+    if (row.full_name) importedKeys.add(row.full_name.toLowerCase())
+    const existing = (row.email && peopleByEmail.get(row.email.toLowerCase())) || peopleByName.get(row.full_name.toLowerCase())
     const updated = {
       ...(existing || {}),
       id: existing?.id || crypto.randomUUID(),
@@ -885,7 +926,8 @@ function applyImport(rows, currentPeople, currentDepartments) {
 
   const inactivePeople = nextPeople.map((person) => {
     const key = (person.email || person.full_name).toLowerCase()
-    return importedKeys.has(key) ? person : { ...person, status: 'inactive', updated_at: now }
+    const nameKey = person.full_name.toLowerCase()
+    return importedKeys.has(key) || importedKeys.has(nameKey) ? person : { ...person, status: 'inactive', updated_at: now }
   })
 
   return { nextPeople: inactivePeople, nextDepartments }

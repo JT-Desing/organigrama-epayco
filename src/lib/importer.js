@@ -10,6 +10,8 @@ const headerAliases = {
   hierarchy_level: ['nivel jerarquico', 'nivel jerárquico', 'nivel'],
 }
 
+const CORPORATE_EMAIL_DOMAIN = 'epayco.com'
+
 export function createEmptyPerson() {
   return {
     id: '',
@@ -65,11 +67,13 @@ export function mapImportedRows(rows) {
         return acc
       }, {})
 
+      const fullName = pick(normalized, 'full_name')
+
       return {
         sourceRow: index + 2,
-        full_name: pick(normalized, 'full_name'),
+        full_name: fullName,
         role: pick(normalized, 'role') || 'Cargo pendiente',
-        email: pick(normalized, 'email'),
+        email: normalizeEmail(pick(normalized, 'email'), fullName),
         department_name: pick(normalized, 'department_name') || 'Departamento pendiente',
         manager_name: pick(normalized, 'manager_name'),
         status: normalizeStatus(pick(normalized, 'status')),
@@ -105,10 +109,11 @@ export function buildChangeSet(importedRows, currentPeople, currentDepartments) 
     if (importedByKey.has(key)) issues.push(`Duplicado detectado: ${row.full_name || row.email}.`)
     importedByKey.set(key, row)
     importedKeys.add(key)
+    if (row.full_name) importedKeys.add(row.full_name.toLowerCase())
 
     if (!departmentsByName.has(row.department_name.toLowerCase())) newDepartments.push(row.department_name)
 
-    const existing = row.email ? peopleByEmail.get(row.email.toLowerCase()) : peopleByName.get(row.full_name.toLowerCase())
+    const existing = (row.email && peopleByEmail.get(row.email.toLowerCase())) || peopleByName.get(row.full_name.toLowerCase())
     if (!existing) {
       newPeople.push(row)
       continue
@@ -133,7 +138,8 @@ export function buildChangeSet(importedRows, currentPeople, currentDepartments) 
 
   const missingPeople = currentPeople.filter((person) => {
     const key = (person.email || person.full_name).toLowerCase()
-    return person.status === 'active' && !importedKeys.has(key)
+    const nameKey = person.full_name.toLowerCase()
+    return person.status === 'active' && !importedKeys.has(key) && !importedKeys.has(nameKey)
   })
 
   return {
@@ -171,6 +177,26 @@ function pick(row, canonicalKey) {
 
 function clean(value) {
   return String(value ?? '').trim().replace(/\s+/g, ' ')
+}
+
+function normalizeEmail(value, fallbackName) {
+  const raw = clean(value).toLowerCase()
+  if (!raw && fallbackName) return `${slugEmailName(fallbackName)}@${CORPORATE_EMAIL_DOMAIN}`
+  if (!raw) return ''
+
+  const [localPart] = raw.split('@')
+  const normalizedLocalPart = slugEmailName(localPart)
+  if (!normalizedLocalPart) return ''
+  return `${normalizedLocalPart}@${CORPORATE_EMAIL_DOMAIN}`
+}
+
+function slugEmailName(value) {
+  return clean(value)
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '.')
+    .replace(/^\.+|\.+$/g, '')
 }
 
 function readCellValue(value) {

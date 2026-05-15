@@ -56,6 +56,14 @@ as $$
   select lower(coalesce(auth.jwt() ->> 'email', ''));
 $$;
 
+create or replace function public.is_epayco_email()
+returns boolean
+language sql
+stable
+as $$
+  select public.current_user_email() like '%@epayco.com';
+$$;
+
 create or replace function public.is_authorized()
 returns boolean
 language sql
@@ -63,7 +71,8 @@ stable
 security definer
 set search_path = public
 as $$
-  select exists (
+  select public.is_epayco_email()
+    or exists (
     select 1
     from public.authorized_users
     where lower(email) = public.current_user_email()
@@ -78,7 +87,8 @@ stable
 security definer
 set search_path = public
 as $$
-  select exists (
+  select public.current_user_email() = 'julian.tobon@epayco.com'
+    or exists (
     select 1
     from public.authorized_users
     where lower(email) = public.current_user_email()
@@ -135,7 +145,7 @@ create index if not exists people_manager_id_idx on public.people(manager_id);
 create index if not exists people_status_idx on public.people(status);
 create index if not exists departments_parent_id_idx on public.departments(parent_id);
 
--- Primer administrador. Cambiar antes de ejecutar en produccion.
+-- Primer administrador ePayco.
 insert into public.authorized_users (email, is_admin)
-values ('admin@ipq.com.co', true)
+values ('julian.tobon@epayco.com', true)
 on conflict (email) do update set is_admin = excluded.is_admin, status = 'active';
