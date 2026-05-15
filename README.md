@@ -67,3 +67,4 @@ Todos los correos importados se normalizan a `@epayco.com`. Si una fila no trae 
 Antes de aplicar cambios muestra nuevas personas, actualizaciones, personas ausentes que se marcaran inactivas, nuevos departamentos, cambios de cargo, cambios de departamento, cambios de jefe y errores/duplicados.
 
 La semilla demo local fue regenerada desde `bd_organigrama_orden_jerarquico.xlsx`, usando `Orden Departamento`, `Orden Jerarquico` y `Nivel Jerarquico` para ordenar el canvas.
+  
