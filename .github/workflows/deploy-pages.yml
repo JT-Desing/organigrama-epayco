@@ -17,7 +17,13 @@ concurrency:
 
 jobs:
   build:
+    environment: github-pages
     runs-on: ubuntu-latest
+    env:
+      VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+      VITE_CORPORATE_DOMAIN: ${{ vars.VITE_CORPORATE_DOMAIN || 'epayco.com' }}
+      VITE_ADMIN_EMAIL: ${{ vars.VITE_ADMIN_EMAIL || 'julian.tobon@epayco.com' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -31,13 +37,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Validate Supabase config
+        run: |
+          test -n "$VITE_SUPABASE_URL"
+          test -n "$VITE_SUPABASE_ANON_KEY"
+
       - name: Build
         run: npm run build
-        env:
-          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
-          VITE_CORPORATE_DOMAIN: ${{ vars.VITE_CORPORATE_DOMAIN || 'epayco.com' }}
-          VITE_ADMIN_EMAIL: ${{ vars.VITE_ADMIN_EMAIL || 'julian.tobon@epayco.com' }}
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v4
