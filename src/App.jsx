@@ -33,7 +33,6 @@ import {
   X,
 } from 'lucide-react'
 import clsx from 'clsx'
-import seedData from './data/ipqSeed.json'
 import { createSupabaseClient, hasSupabaseConfig } from './lib/supabase'
 import {
   buildChangeSet,
@@ -106,21 +105,9 @@ function App() {
   const [authNotice, setAuthNotice] = useState('')
   const [authLoading, setAuthLoading] = useState(false)
   const [mode, setMode] = useState('org')
-  const [people, setPeople] = useState(() => (localDemoMode ? seedData.people : []))
-  const [departments, setDepartments] = useState(() => (localDemoMode ? seedData.departments : []))
-  const [history, setHistory] = useState(() =>
-    localDemoMode
-      ? [
-          {
-            id: 'hist-demo',
-            action: 'Carga inicial demo',
-            actor: 'sistema',
-            target: '149 personas / 13 departamentos',
-            created_at: new Date().toISOString(),
-          },
-        ]
-      : [],
-  )
+  const [people, setPeople] = useState([])
+  const [departments, setDepartments] = useState([])
+  const [history, setHistory] = useState([])
   const [selectedPerson, setSelectedPerson] = useState(null)
   const [query, setQuery] = useState('')
   const deferredQuery = useDeferredValue(query)
@@ -134,6 +121,26 @@ function App() {
   const demoMode = localDemoMode
   const signedIn = demoMode || Boolean(session)
   const normalized = useMemo(() => normalizeCatalog(people, departments), [people, departments])
+
+  useEffect(() => {
+    if (!localDemoMode) return
+
+    fetch('/src/data/ipqSeed.json')
+      .then((response) => response.json())
+      .then((demoSeed) => {
+      setPeople(demoSeed.people)
+      setDepartments(demoSeed.departments)
+      setHistory([
+        {
+          id: 'hist-demo',
+          action: 'Carga inicial demo',
+          actor: 'sistema',
+          target: `${demoSeed.people.length} personas / ${demoSeed.departments.length} departamentos`,
+          created_at: new Date().toISOString(),
+        },
+      ])
+    })
+  }, [])
 
   useEffect(() => {
     if (!supabase) return
