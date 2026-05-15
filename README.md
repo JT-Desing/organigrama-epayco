@@ -25,10 +25,11 @@ VITE_ADMIN_EMAIL=julian.tobon@epayco.com
 ## Supabase
 
 1. Ejecuta `supabase/schema.sql` en el SQL editor de Supabase.
-2. Activa Magic Link o proveedor Google/Microsoft en Supabase Auth.
-3. En Authentication > URL Configuration, configura el Site URL de produccion y agrega tambien las URLs locales de desarrollo.
-4. La regla de lectura permite usuarios autenticados con correo `@epayco.com`.
-5. Solo `julian.tobon@epayco.com` queda como administrador inicial con permisos de carga, edicion e historial.
+2. Ejecuta `supabase/seed_from_github.sql` para cargar la base inicial del organigrama.
+3. Activa Magic Link o proveedor Google/Microsoft en Supabase Auth.
+4. En Authentication > URL Configuration, configura el Site URL de produccion y agrega tambien las URLs locales de desarrollo.
+5. La regla de lectura permite usuarios autenticados con correo `@epayco.com`.
+6. Solo `julian.tobon@epayco.com` queda como administrador inicial con permisos de carga, edicion e historial.
 
 URLs recomendadas de Auth:
 

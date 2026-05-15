@@ -501,6 +501,30 @@
   font-weight: 500;
 }
 
+.canvas-empty {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 8px;
+  padding: 24px;
+  color: #0f766e;
+  text-align: center;
+  pointer-events: none;
+}
+
+.canvas-empty strong {
+  color: #0f172a;
+  font-size: 1.1rem;
+}
+
+.canvas-empty span {
+  max-width: 360px;
+  color: #64748b;
+}
+
 .department-node {
   width: 720px;
   min-height: 88px;

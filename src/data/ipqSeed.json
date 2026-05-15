@@ -1,4 +1,4 @@
-﻿{
+{
   "departments": [
     {
       "id": "gerencia-general-epayco",
@@ -104,7 +104,7 @@
       "updated_at": "2026-05-14T00:00:00.000Z",
       "department_sort_order": 1,
       "hierarchy_order": 1,
-      "hierarchy_level": "Alta direcciÃ³n",
+      "hierarchy_level": "Alta dirección",
       "rule_applied": "CEO/CTO",
       "source_row": "2"
     },
@@ -125,7 +125,7 @@
     },
     {
       "id": "p-003",
-      "full_name": "MAURICIO BUSTAMANTE LONDOÃ‘O",
+      "full_name": "MAURICIO BUSTAMANTE LONDOÑO",
       "role": "DIRECTOR FINANCIERO",
       "email": "mauricio.bustamante.londono@epayco.com",
       "department_id": "depto-administrativo-y-financiero",
@@ -134,7 +134,7 @@
       "updated_at": "2026-05-14T00:00:00.000Z",
       "department_sort_order": 2,
       "hierarchy_order": 2,
-      "hierarchy_level": "Gerencia / DirecciÃ³n",
+      "hierarchy_level": "Gerencia / Dirección",
       "rule_applied": "GERENTE/DIRECTOR",
       "source_row": "15"
     },
@@ -194,8 +194,8 @@
       "updated_at": "2026-05-14T00:00:00.000Z",
       "department_sort_order": 2,
       "hierarchy_order": 5,
-      "hierarchy_level": "Analista / Ejecutor tÃ©cnico",
-      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÃ‘ADOR",
+      "hierarchy_level": "Analista / Ejecutor técnico",
+      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÑADOR",
       "source_row": "7"
     },
     {
@@ -209,8 +209,8 @@
       "updated_at": "2026-05-14T00:00:00.000Z",
       "department_sort_order": 2,
       "hierarchy_order": 5,
-      "hierarchy_level": "Analista / Ejecutor tÃ©cnico",
-      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÃ‘ADOR",
+      "hierarchy_level": "Analista / Ejecutor técnico",
+      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÑADOR",
       "source_row": "8"
     },
     {
@@ -224,8 +224,8 @@
       "updated_at": "2026-05-14T00:00:00.000Z",
       "department_sort_order": 2,
       "hierarchy_order": 5,
-      "hierarchy_level": "Analista / Ejecutor tÃ©cnico",
-      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÃ‘ADOR",
+      "hierarchy_level": "Analista / Ejecutor técnico",
+      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÑADOR",
       "source_row": "4"
     },
     {
@@ -239,8 +239,8 @@
       "updated_at": "2026-05-14T00:00:00.000Z",
       "department_sort_order": 2,
       "hierarchy_order": 5,
-      "hierarchy_level": "Analista / Ejecutor tÃ©cnico",
-      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÃ‘ADOR",
+      "hierarchy_level": "Analista / Ejecutor técnico",
+      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÑADOR",
       "source_row": "6"
     },
     {
@@ -254,8 +254,8 @@
       "updated_at": "2026-05-14T00:00:00.000Z",
       "department_sort_order": 2,
       "hierarchy_order": 5,
-      "hierarchy_level": "Analista / Ejecutor tÃ©cnico",
-      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÃ‘ADOR",
+      "hierarchy_level": "Analista / Ejecutor técnico",
+      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÑADOR",
       "source_row": "5"
     },
     {
@@ -299,7 +299,7 @@
       "updated_at": "2026-05-14T00:00:00.000Z",
       "department_sort_order": 2,
       "hierarchy_order": 7,
-      "hierarchy_level": "Aprendiz / FormaciÃ³n",
+      "hierarchy_level": "Aprendiz / Formación",
       "rule_applied": "APRENDIZ/SENA",
       "source_row": "9"
     },
@@ -314,7 +314,7 @@
       "updated_at": "2026-05-14T00:00:00.000Z",
       "department_sort_order": 3,
       "hierarchy_order": 2,
-      "hierarchy_level": "Gerencia / DirecciÃ³n",
+      "hierarchy_level": "Gerencia / Dirección",
       "rule_applied": "GERENTE/DIRECTOR",
       "source_row": "29"
     },
@@ -350,7 +350,7 @@
     },
     {
       "id": "p-021",
-      "full_name": "CAROLINA CASTAÃ‘O MESA",
+      "full_name": "CAROLINA CASTAÑO MESA",
       "role": "KEY ACCOUNT MANAGER DIGITAL",
       "email": "carolina.castano.mesa@epayco.com",
       "department_id": "depto-comercial",
@@ -395,7 +395,7 @@
     },
     {
       "id": "p-022",
-      "full_name": "TATIANA GIRALDO CAÃ‘AS",
+      "full_name": "TATIANA GIRALDO CAÑAS",
       "role": "KEY ACCOUNT MANAGER DIGITAL",
       "email": "tatiana.giraldo.canas@epayco.com",
       "department_id": "depto-comercial",
@@ -440,7 +440,7 @@
     },
     {
       "id": "p-024",
-      "full_name": "CLAUDIA PATRICIA OSORNO PATIÃ‘O",
+      "full_name": "CLAUDIA PATRICIA OSORNO PATIÑO",
       "role": "ANALISTA CERTIFICACIONES",
       "email": "claudia.patricia.osorno.patino@epayco.com",
       "department_id": "depto-comercial",
@@ -449,8 +449,8 @@
       "updated_at": "2026-05-14T00:00:00.000Z",
       "department_sort_order": 3,
       "hierarchy_order": 5,
-      "hierarchy_level": "Analista / Ejecutor tÃ©cnico",
-      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÃ‘ADOR",
+      "hierarchy_level": "Analista / Ejecutor técnico",
+      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÑADOR",
       "source_row": "17"
     },
     {
@@ -464,8 +464,8 @@
       "updated_at": "2026-05-14T00:00:00.000Z",
       "department_sort_order": 3,
       "hierarchy_order": 5,
-      "hierarchy_level": "Analista / Ejecutor tÃ©cnico",
-      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÃ‘ADOR",
+      "hierarchy_level": "Analista / Ejecutor técnico",
+      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÑADOR",
       "source_row": "16"
     },
     {
@@ -479,8 +479,8 @@
       "updated_at": "2026-05-14T00:00:00.000Z",
       "department_sort_order": 3,
       "hierarchy_order": 5,
-      "hierarchy_level": "Analista / Ejecutor tÃ©cnico",
-      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÃ‘ADOR",
+      "hierarchy_level": "Analista / Ejecutor técnico",
+      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÑADOR",
       "source_row": "18"
     },
     {
@@ -494,8 +494,8 @@
       "updated_at": "2026-05-14T00:00:00.000Z",
       "department_sort_order": 3,
       "hierarchy_order": 5,
-      "hierarchy_level": "Analista / Ejecutor tÃ©cnico",
-      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÃ‘ADOR",
+      "hierarchy_level": "Analista / Ejecutor técnico",
+      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÑADOR",
       "source_row": "19"
     },
     {
@@ -509,8 +509,8 @@
       "updated_at": "2026-05-14T00:00:00.000Z",
       "department_sort_order": 3,
       "hierarchy_order": 5,
-      "hierarchy_level": "Analista / Ejecutor tÃ©cnico",
-      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÃ‘ADOR",
+      "hierarchy_level": "Analista / Ejecutor técnico",
+      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÑADOR",
       "source_row": "20"
     },
     {
@@ -569,7 +569,7 @@
       "updated_at": "2026-05-14T00:00:00.000Z",
       "department_sort_order": 4,
       "hierarchy_order": 2,
-      "hierarchy_level": "Gerencia / DirecciÃ³n",
+      "hierarchy_level": "Gerencia / Dirección",
       "rule_applied": "GERENTE/DIRECTOR",
       "source_row": "100"
     },
@@ -584,7 +584,7 @@
       "updated_at": "2026-05-14T00:00:00.000Z",
       "department_sort_order": 5,
       "hierarchy_order": 2,
-      "hierarchy_level": "Gerencia / DirecciÃ³n",
+      "hierarchy_level": "Gerencia / Dirección",
       "rule_applied": "GERENTE/DIRECTOR",
       "source_row": "70"
     },
@@ -599,8 +599,8 @@
       "updated_at": "2026-05-14T00:00:00.000Z",
       "department_sort_order": 5,
       "hierarchy_order": 5,
-      "hierarchy_level": "Analista / Ejecutor tÃ©cnico",
-      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÃ‘ADOR",
+      "hierarchy_level": "Analista / Ejecutor técnico",
+      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÑADOR",
       "source_row": "71"
     },
     {
@@ -614,8 +614,8 @@
       "updated_at": "2026-05-14T00:00:00.000Z",
       "department_sort_order": 5,
       "hierarchy_order": 5,
-      "hierarchy_level": "Analista / Ejecutor tÃ©cnico",
-      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÃ‘ADOR",
+      "hierarchy_level": "Analista / Ejecutor técnico",
+      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÑADOR",
       "source_row": "68"
     },
     {
@@ -629,8 +629,8 @@
       "updated_at": "2026-05-14T00:00:00.000Z",
       "department_sort_order": 5,
       "hierarchy_order": 5,
-      "hierarchy_level": "Analista / Ejecutor tÃ©cnico",
-      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÃ‘ADOR",
+      "hierarchy_level": "Analista / Ejecutor técnico",
+      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÑADOR",
       "source_row": "69"
     },
     {
@@ -644,8 +644,8 @@
       "updated_at": "2026-05-14T00:00:00.000Z",
       "department_sort_order": 5,
       "hierarchy_order": 5,
-      "hierarchy_level": "Analista / Ejecutor tÃ©cnico",
-      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÃ‘ADOR",
+      "hierarchy_level": "Analista / Ejecutor técnico",
+      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÑADOR",
       "source_row": "67"
     },
     {
@@ -875,8 +875,8 @@
     },
     {
       "id": "p-053",
-      "full_name": "DANIELA AREIZA LONDOÃ‘O",
-      "role": "DISEÃ‘ADOR UX UI",
+      "full_name": "DANIELA AREIZA LONDOÑO",
+      "role": "DISEÑADOR UX UI",
       "email": "daniela.areiza.londono@epayco.com",
       "department_id": "depto-de-producto",
       "manager_id": "p-040",
@@ -884,14 +884,14 @@
       "updated_at": "2026-05-14T00:00:00.000Z",
       "department_sort_order": 6,
       "hierarchy_order": 5,
-      "hierarchy_level": "Analista / Ejecutor tÃ©cnico",
-      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÃ‘ADOR",
+      "hierarchy_level": "Analista / Ejecutor técnico",
+      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÑADOR",
       "source_row": "73"
     },
     {
       "id": "p-054",
       "full_name": "JOSE IGNACIO MEZA SANCHEZ",
-      "role": "DISEÃ‘ADOR UX UI",
+      "role": "DISEÑADOR UX UI",
       "email": "jose.ignacio.meza.sanchez@epayco.com",
       "department_id": "depto-de-producto",
       "manager_id": "p-040",
@@ -899,14 +899,14 @@
       "updated_at": "2026-05-14T00:00:00.000Z",
       "department_sort_order": 6,
       "hierarchy_order": 5,
-      "hierarchy_level": "Analista / Ejecutor tÃ©cnico",
-      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÃ‘ADOR",
+      "hierarchy_level": "Analista / Ejecutor técnico",
+      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÑADOR",
       "source_row": "72"
     },
     {
       "id": "p-055",
       "full_name": "KATHERIN HELENA RUIZ MAGO",
-      "role": "DISEÃ‘ADOR UX UI",
+      "role": "DISEÑADOR UX UI",
       "email": "katherin.helena.ruiz.mago@epayco.com",
       "department_id": "depto-de-producto",
       "manager_id": "p-040",
@@ -914,14 +914,14 @@
       "updated_at": "2026-05-14T00:00:00.000Z",
       "department_sort_order": 6,
       "hierarchy_order": 5,
-      "hierarchy_level": "Analista / Ejecutor tÃ©cnico",
-      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÃ‘ADOR",
+      "hierarchy_level": "Analista / Ejecutor técnico",
+      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÑADOR",
       "source_row": "75"
     },
     {
       "id": "p-057",
       "full_name": "SARA MELISSA CALLE LEON",
-      "role": "DISEÃ‘ADOR UX UI T.F",
+      "role": "DISEÑADOR UX UI T.F",
       "email": "sara.melissa.calle.leon@epayco.com",
       "department_id": "depto-de-producto",
       "manager_id": "p-040",
@@ -929,14 +929,14 @@
       "updated_at": "2026-05-14T00:00:00.000Z",
       "department_sort_order": 6,
       "hierarchy_order": 5,
-      "hierarchy_level": "Analista / Ejecutor tÃ©cnico",
-      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÃ‘ADOR",
+      "hierarchy_level": "Analista / Ejecutor técnico",
+      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÑADOR",
       "source_row": "76"
     },
     {
       "id": "p-056",
       "full_name": "YEIMY JASNEIDY ESPINOSA TORRES",
-      "role": "DISEÃ‘ADOR UX UI",
+      "role": "DISEÑADOR UX UI",
       "email": "yeimy.jasneidy.espinosa.torres@epayco.com",
       "department_id": "depto-de-producto",
       "manager_id": "p-040",
@@ -944,8 +944,8 @@
       "updated_at": "2026-05-14T00:00:00.000Z",
       "department_sort_order": 6,
       "hierarchy_order": 5,
-      "hierarchy_level": "Analista / Ejecutor tÃ©cnico",
-      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÃ‘ADOR",
+      "hierarchy_level": "Analista / Ejecutor técnico",
+      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÑADOR",
       "source_row": "74"
     },
     {
@@ -959,13 +959,13 @@
       "updated_at": "2026-05-14T00:00:00.000Z",
       "department_sort_order": 7,
       "hierarchy_order": 2,
-      "hierarchy_level": "Gerencia / DirecciÃ³n",
+      "hierarchy_level": "Gerencia / Dirección",
       "rule_applied": "GERENTE/DIRECTOR",
       "source_row": "117"
     },
     {
       "id": "p-061",
-      "full_name": "ALEXANDER URREGO CASTAÃ‘O",
+      "full_name": "ALEXANDER URREGO CASTAÑO",
       "role": "ANALISTA RIESGOS T.F",
       "email": "alexander.urrego.castano@epayco.com",
       "department_id": "depto-operaciones",
@@ -974,8 +974,8 @@
       "updated_at": "2026-05-14T00:00:00.000Z",
       "department_sort_order": 7,
       "hierarchy_order": 5,
-      "hierarchy_level": "Analista / Ejecutor tÃ©cnico",
-      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÃ‘ADOR",
+      "hierarchy_level": "Analista / Ejecutor técnico",
+      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÑADOR",
       "source_row": "103"
     },
     {
@@ -989,8 +989,8 @@
       "updated_at": "2026-05-14T00:00:00.000Z",
       "department_sort_order": 7,
       "hierarchy_order": 5,
-      "hierarchy_level": "Analista / Ejecutor tÃ©cnico",
-      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÃ‘ADOR",
+      "hierarchy_level": "Analista / Ejecutor técnico",
+      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÑADOR",
       "source_row": "101"
     },
     {
@@ -1004,8 +1004,8 @@
       "updated_at": "2026-05-14T00:00:00.000Z",
       "department_sort_order": 7,
       "hierarchy_order": 5,
-      "hierarchy_level": "Analista / Ejecutor tÃ©cnico",
-      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÃ‘ADOR",
+      "hierarchy_level": "Analista / Ejecutor técnico",
+      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÑADOR",
       "source_row": "102"
     },
     {
@@ -1019,8 +1019,8 @@
       "updated_at": "2026-05-14T00:00:00.000Z",
       "department_sort_order": 7,
       "hierarchy_order": 5,
-      "hierarchy_level": "Analista / Ejecutor tÃ©cnico",
-      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÃ‘ADOR",
+      "hierarchy_level": "Analista / Ejecutor técnico",
+      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÑADOR",
       "source_row": "119"
     },
     {
@@ -1070,7 +1070,7 @@
     },
     {
       "id": "p-076",
-      "full_name": "DAIANA VANESA PATIÃ‘O CANO",
+      "full_name": "DAIANA VANESA PATIÑO CANO",
       "role": "AUXILIAR RIESGOS",
       "email": "daiana.vanesa.patino.cano@epayco.com",
       "department_id": "depto-operaciones",
@@ -1190,7 +1190,7 @@
     },
     {
       "id": "p-072",
-      "full_name": "LAURA VALERIA DE LA HOZ LONDOÃ‘O",
+      "full_name": "LAURA VALERIA DE LA HOZ LONDOÑO",
       "role": "AUXILIAR OPERACIONES",
       "email": "laura.valeria.de.la.hoz.londono@epayco.com",
       "department_id": "depto-operaciones",
@@ -1640,7 +1640,7 @@
     },
     {
       "id": "p-121",
-      "full_name": "ANGEL GABRIEL RANGEL PIÃ‘ERO",
+      "full_name": "ANGEL GABRIEL RANGEL PIÑERO",
       "role": "DESARROLLADOR IOS T.F 9214",
       "email": "angel.gabriel.rangel.pinero@epayco.com",
       "department_id": "depto-de-desarrollo",
@@ -1649,8 +1649,8 @@
       "updated_at": "2026-05-14T00:00:00.000Z",
       "department_sort_order": 9,
       "hierarchy_order": 5,
-      "hierarchy_level": "Analista / Ejecutor tÃ©cnico",
-      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÃ‘ADOR",
+      "hierarchy_level": "Analista / Ejecutor técnico",
+      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÑADOR",
       "source_row": "62"
     },
     {
@@ -1664,13 +1664,13 @@
       "updated_at": "2026-05-14T00:00:00.000Z",
       "department_sort_order": 9,
       "hierarchy_order": 5,
-      "hierarchy_level": "Analista / Ejecutor tÃ©cnico",
-      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÃ‘ADOR",
+      "hierarchy_level": "Analista / Ejecutor técnico",
+      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÑADOR",
       "source_row": "61"
     },
     {
       "id": "p-106",
-      "full_name": "CAMILO ANDRES MONTOYA CASTAÃ‘EDA",
+      "full_name": "CAMILO ANDRES MONTOYA CASTAÑEDA",
       "role": "DESARROLLADOR BACKEND 9214",
       "email": "camilo.andres.montoya.castaneda@epayco.com",
       "department_id": "depto-de-desarrollo",
@@ -1679,8 +1679,8 @@
       "updated_at": "2026-05-14T00:00:00.000Z",
       "department_sort_order": 9,
       "hierarchy_order": 5,
-      "hierarchy_level": "Analista / Ejecutor tÃ©cnico",
-      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÃ‘ADOR",
+      "hierarchy_level": "Analista / Ejecutor técnico",
+      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÑADOR",
       "source_row": "57"
     },
     {
@@ -1694,8 +1694,8 @@
       "updated_at": "2026-05-14T00:00:00.000Z",
       "department_sort_order": 9,
       "hierarchy_order": 5,
-      "hierarchy_level": "Analista / Ejecutor tÃ©cnico",
-      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÃ‘ADOR",
+      "hierarchy_level": "Analista / Ejecutor técnico",
+      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÑADOR",
       "source_row": "55"
     },
     {
@@ -1709,8 +1709,8 @@
       "updated_at": "2026-05-14T00:00:00.000Z",
       "department_sort_order": 9,
       "hierarchy_order": 5,
-      "hierarchy_level": "Analista / Ejecutor tÃ©cnico",
-      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÃ‘ADOR",
+      "hierarchy_level": "Analista / Ejecutor técnico",
+      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÑADOR",
       "source_row": "65"
     },
     {
@@ -1724,8 +1724,8 @@
       "updated_at": "2026-05-14T00:00:00.000Z",
       "department_sort_order": 9,
       "hierarchy_order": 5,
-      "hierarchy_level": "Analista / Ejecutor tÃ©cnico",
-      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÃ‘ADOR",
+      "hierarchy_level": "Analista / Ejecutor técnico",
+      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÑADOR",
       "source_row": "60"
     },
     {
@@ -1739,8 +1739,8 @@
       "updated_at": "2026-05-14T00:00:00.000Z",
       "department_sort_order": 9,
       "hierarchy_order": 5,
-      "hierarchy_level": "Analista / Ejecutor tÃ©cnico",
-      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÃ‘ADOR",
+      "hierarchy_level": "Analista / Ejecutor técnico",
+      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÑADOR",
       "source_row": "52"
     },
     {
@@ -1754,8 +1754,8 @@
       "updated_at": "2026-05-14T00:00:00.000Z",
       "department_sort_order": 9,
       "hierarchy_order": 5,
-      "hierarchy_level": "Analista / Ejecutor tÃ©cnico",
-      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÃ‘ADOR",
+      "hierarchy_level": "Analista / Ejecutor técnico",
+      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÑADOR",
       "source_row": "56"
     },
     {
@@ -1769,8 +1769,8 @@
       "updated_at": "2026-05-14T00:00:00.000Z",
       "department_sort_order": 9,
       "hierarchy_order": 5,
-      "hierarchy_level": "Analista / Ejecutor tÃ©cnico",
-      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÃ‘ADOR",
+      "hierarchy_level": "Analista / Ejecutor técnico",
+      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÑADOR",
       "source_row": "42"
     },
     {
@@ -1784,8 +1784,8 @@
       "updated_at": "2026-05-14T00:00:00.000Z",
       "department_sort_order": 9,
       "hierarchy_order": 5,
-      "hierarchy_level": "Analista / Ejecutor tÃ©cnico",
-      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÃ‘ADOR",
+      "hierarchy_level": "Analista / Ejecutor técnico",
+      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÑADOR",
       "source_row": "40"
     },
     {
@@ -1799,8 +1799,8 @@
       "updated_at": "2026-05-14T00:00:00.000Z",
       "department_sort_order": 9,
       "hierarchy_order": 5,
-      "hierarchy_level": "Analista / Ejecutor tÃ©cnico",
-      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÃ‘ADOR",
+      "hierarchy_level": "Analista / Ejecutor técnico",
+      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÑADOR",
       "source_row": "44"
     },
     {
@@ -1814,8 +1814,8 @@
       "updated_at": "2026-05-14T00:00:00.000Z",
       "department_sort_order": 9,
       "hierarchy_order": 5,
-      "hierarchy_level": "Analista / Ejecutor tÃ©cnico",
-      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÃ‘ADOR",
+      "hierarchy_level": "Analista / Ejecutor técnico",
+      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÑADOR",
       "source_row": "41"
     },
     {
@@ -1829,8 +1829,8 @@
       "updated_at": "2026-05-14T00:00:00.000Z",
       "department_sort_order": 9,
       "hierarchy_order": 5,
-      "hierarchy_level": "Analista / Ejecutor tÃ©cnico",
-      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÃ‘ADOR",
+      "hierarchy_level": "Analista / Ejecutor técnico",
+      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÑADOR",
       "source_row": "53"
     },
     {
@@ -1844,8 +1844,8 @@
       "updated_at": "2026-05-14T00:00:00.000Z",
       "department_sort_order": 9,
       "hierarchy_order": 5,
-      "hierarchy_level": "Analista / Ejecutor tÃ©cnico",
-      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÃ‘ADOR",
+      "hierarchy_level": "Analista / Ejecutor técnico",
+      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÑADOR",
       "source_row": "58"
     },
     {
@@ -1859,8 +1859,8 @@
       "updated_at": "2026-05-14T00:00:00.000Z",
       "department_sort_order": 9,
       "hierarchy_order": 5,
-      "hierarchy_level": "Analista / Ejecutor tÃ©cnico",
-      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÃ‘ADOR",
+      "hierarchy_level": "Analista / Ejecutor técnico",
+      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÑADOR",
       "source_row": "43"
     },
     {
@@ -1874,8 +1874,8 @@
       "updated_at": "2026-05-14T00:00:00.000Z",
       "department_sort_order": 9,
       "hierarchy_order": 5,
-      "hierarchy_level": "Analista / Ejecutor tÃ©cnico",
-      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÃ‘ADOR",
+      "hierarchy_level": "Analista / Ejecutor técnico",
+      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÑADOR",
       "source_row": "64"
     },
     {
@@ -1889,8 +1889,8 @@
       "updated_at": "2026-05-14T00:00:00.000Z",
       "department_sort_order": 9,
       "hierarchy_order": 5,
-      "hierarchy_level": "Analista / Ejecutor tÃ©cnico",
-      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÃ‘ADOR",
+      "hierarchy_level": "Analista / Ejecutor técnico",
+      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÑADOR",
       "source_row": "45"
     },
     {
@@ -1904,8 +1904,8 @@
       "updated_at": "2026-05-14T00:00:00.000Z",
       "department_sort_order": 9,
       "hierarchy_order": 5,
-      "hierarchy_level": "Analista / Ejecutor tÃ©cnico",
-      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÃ‘ADOR",
+      "hierarchy_level": "Analista / Ejecutor técnico",
+      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÑADOR",
       "source_row": "59"
     },
     {
@@ -1919,7 +1919,7 @@
       "updated_at": "2026-05-14T00:00:00.000Z",
       "department_sort_order": 9,
       "hierarchy_order": 7,
-      "hierarchy_level": "Aprendiz / FormaciÃ³n",
+      "hierarchy_level": "Aprendiz / Formación",
       "rule_applied": "APRENDIZ/SENA",
       "source_row": "33"
     },
@@ -1934,7 +1934,7 @@
       "updated_at": "2026-05-14T00:00:00.000Z",
       "department_sort_order": 9,
       "hierarchy_order": 7,
-      "hierarchy_level": "Aprendiz / FormaciÃ³n",
+      "hierarchy_level": "Aprendiz / Formación",
       "rule_applied": "APRENDIZ/SENA",
       "source_row": "34"
     },
@@ -1949,7 +1949,7 @@
       "updated_at": "2026-05-14T00:00:00.000Z",
       "department_sort_order": 10,
       "hierarchy_order": 1,
-      "hierarchy_level": "Alta direcciÃ³n",
+      "hierarchy_level": "Alta dirección",
       "rule_applied": "CEO/CTO",
       "source_row": "143"
     },
@@ -1964,7 +1964,7 @@
       "updated_at": "2026-05-14T00:00:00.000Z",
       "department_sort_order": 10,
       "hierarchy_order": 2,
-      "hierarchy_level": "Gerencia / DirecciÃ³n",
+      "hierarchy_level": "Gerencia / Dirección",
       "rule_applied": "GERENTE/DIRECTOR",
       "source_row": "142"
     },
@@ -2045,7 +2045,7 @@
     },
     {
       "id": "p-131",
-      "full_name": "ANDRES FELIPE CASTAÃ‘EDA CASTAÃ‘EDA",
+      "full_name": "ANDRES FELIPE CASTAÑEDA CASTAÑEDA",
       "role": "ANALISTA QA",
       "email": "andres.felipe.castaneda.castaneda@epayco.com",
       "department_id": "depto-tecnologia-e-informacion",
@@ -2054,8 +2054,8 @@
       "updated_at": "2026-05-14T00:00:00.000Z",
       "department_sort_order": 10,
       "hierarchy_order": 5,
-      "hierarchy_level": "Analista / Ejecutor tÃ©cnico",
-      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÃ‘ADOR",
+      "hierarchy_level": "Analista / Ejecutor técnico",
+      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÑADOR",
       "source_row": "137"
     },
     {
@@ -2069,8 +2069,8 @@
       "updated_at": "2026-05-14T00:00:00.000Z",
       "department_sort_order": 10,
       "hierarchy_order": 5,
-      "hierarchy_level": "Analista / Ejecutor tÃ©cnico",
-      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÃ‘ADOR",
+      "hierarchy_level": "Analista / Ejecutor técnico",
+      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÑADOR",
       "source_row": "138"
     },
     {
@@ -2084,8 +2084,8 @@
       "updated_at": "2026-05-14T00:00:00.000Z",
       "department_sort_order": 10,
       "hierarchy_order": 5,
-      "hierarchy_level": "Analista / Ejecutor tÃ©cnico",
-      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÃ‘ADOR",
+      "hierarchy_level": "Analista / Ejecutor técnico",
+      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÑADOR",
       "source_row": "140"
     },
     {
@@ -2099,8 +2099,8 @@
       "updated_at": "2026-05-14T00:00:00.000Z",
       "department_sort_order": 10,
       "hierarchy_order": 5,
-      "hierarchy_level": "Analista / Ejecutor tÃ©cnico",
-      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÃ‘ADOR",
+      "hierarchy_level": "Analista / Ejecutor técnico",
+      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÑADOR",
       "source_row": "146"
     },
     {
@@ -2114,8 +2114,8 @@
       "updated_at": "2026-05-14T00:00:00.000Z",
       "department_sort_order": 10,
       "hierarchy_order": 5,
-      "hierarchy_level": "Analista / Ejecutor tÃ©cnico",
-      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÃ‘ADOR",
+      "hierarchy_level": "Analista / Ejecutor técnico",
+      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÑADOR",
       "source_row": "147"
     },
     {
@@ -2129,8 +2129,8 @@
       "updated_at": "2026-05-14T00:00:00.000Z",
       "department_sort_order": 10,
       "hierarchy_order": 5,
-      "hierarchy_level": "Analista / Ejecutor tÃ©cnico",
-      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÃ‘ADOR",
+      "hierarchy_level": "Analista / Ejecutor técnico",
+      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÑADOR",
       "source_row": "139"
     },
     {
@@ -2195,7 +2195,7 @@
     },
     {
       "id": "p-140",
-      "full_name": "ISAAC LONDOÃ‘O CORTES",
+      "full_name": "ISAAC LONDOÑO CORTES",
       "role": "PROFESIONAL CIBERSEGURIDAD T.F",
       "email": "isaac.londono.cortes@epayco.com",
       "department_id": "depto-de-seguridad-de-informacion",
@@ -2219,7 +2219,7 @@
       "updated_at": "2026-05-14T00:00:00.000Z",
       "department_sort_order": 12,
       "hierarchy_order": 2,
-      "hierarchy_level": "Gerencia / DirecciÃ³n",
+      "hierarchy_level": "Gerencia / Dirección",
       "rule_applied": "GERENTE/DIRECTOR",
       "source_row": "97"
     },
@@ -2264,8 +2264,8 @@
       "updated_at": "2026-05-14T00:00:00.000Z",
       "department_sort_order": 12,
       "hierarchy_order": 5,
-      "hierarchy_level": "Analista / Ejecutor tÃ©cnico",
-      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÃ‘ADOR",
+      "hierarchy_level": "Analista / Ejecutor técnico",
+      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÑADOR",
       "source_row": "96"
     },
     {
@@ -2279,7 +2279,7 @@
       "updated_at": "2026-05-14T00:00:00.000Z",
       "department_sort_order": 13,
       "hierarchy_order": 2,
-      "hierarchy_level": "Gerencia / DirecciÃ³n",
+      "hierarchy_level": "Gerencia / Dirección",
       "rule_applied": "GERENTE/DIRECTOR",
       "source_row": "136"
     },
@@ -2294,8 +2294,8 @@
       "updated_at": "2026-05-14T00:00:00.000Z",
       "department_sort_order": 13,
       "hierarchy_order": 5,
-      "hierarchy_level": "Analista / Ejecutor tÃ©cnico",
-      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÃ‘ADOR",
+      "hierarchy_level": "Analista / Ejecutor técnico",
+      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÑADOR",
       "source_row": "133"
     },
     {
@@ -2309,8 +2309,8 @@
       "updated_at": "2026-05-14T00:00:00.000Z",
       "department_sort_order": 13,
       "hierarchy_order": 5,
-      "hierarchy_level": "Analista / Ejecutor tÃ©cnico",
-      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÃ‘ADOR",
+      "hierarchy_level": "Analista / Ejecutor técnico",
+      "rule_applied": "ANALISTA/DESARROLLADOR/DISEÑADOR",
       "source_row": "134"
     },
     {

@@ -178,17 +178,28 @@ function App() {
 
     const loadPrivateData = async () => {
       setBusyMessage('Sincronizando datos privados desde Supabase...')
-      const [{ data: dbDepartments, error: deptError }, { data: dbPeople, error: peopleError }, { data: auditRows }] =
-        await Promise.all([
-          supabase.from('departments').select('*').order('sort_order'),
-          supabase.from('people').select('*').order('full_name'),
-          supabase.from('change_history').select('*').order('created_at', { ascending: false }).limit(50),
-        ])
+      try {
+        const [{ data: dbDepartments, error: deptError }, { data: dbPeople, error: peopleError }, { data: auditRows }] =
+          await Promise.all([
+            supabase.from('departments').select('*').order('sort_order'),
+            supabase.from('people').select('*').order('full_name'),
+            supabase.from('change_history').select('*').order('created_at', { ascending: false }).limit(50),
+          ])
 
-      if (!deptError && dbDepartments?.length) setDepartments(dbDepartments)
-      if (!peopleError && dbPeople?.length) setPeople(dbPeople)
-      if (auditRows?.length) setHistory(auditRows)
-      setBusyMessage('')
+        if (deptError || peopleError) {
+          console.error('Supabase load error', deptError || peopleError)
+          setBusyMessage('No fue posible cargar la base desde Supabase. Revisa permisos RLS y datos publicados.')
+          return
+        }
+
+        setDepartments(dbDepartments || [])
+        setPeople(dbPeople || [])
+        setHistory(auditRows || [])
+        setBusyMessage('')
+      } catch (error) {
+        console.error('Supabase load error', error)
+        setBusyMessage('No fue posible conectar con Supabase. Revisa la configuracion del proyecto.')
+      }
     }
 
     loadPrivateData()
@@ -627,6 +638,13 @@ function OrgCanvas({ flowModel, visiblePeople, selectedDepartmentId }) {
         <MiniMap pannable zoomable nodeStrokeWidth={3} />
         <Controls position="bottom-right" />
       </ReactFlow>
+      {flowModel.nodes.length === 0 && (
+        <div className="canvas-empty">
+          <Building2 size={28} />
+          <strong>No hay datos para mostrar</strong>
+          <span>La sesion esta activa, pero Supabase no devolvio departamentos ni personas.</span>
+        </div>
+      )}
     </section>
   )
 }

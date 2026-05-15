@@ -97,6 +97,15 @@ as $$
   );
 $$;
 
+drop policy if exists "authorized users read departments" on public.departments;
+drop policy if exists "admins write departments" on public.departments;
+drop policy if exists "authorized users read people" on public.people;
+drop policy if exists "admins write people" on public.people;
+drop policy if exists "users read own authorization" on public.authorized_users;
+drop policy if exists "admins manage authorization" on public.authorized_users;
+drop policy if exists "authorized users read history" on public.change_history;
+drop policy if exists "admins write history" on public.change_history;
+
 create policy "authorized users read departments"
 on public.departments for select
 to authenticated
