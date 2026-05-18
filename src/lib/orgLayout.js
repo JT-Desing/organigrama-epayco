@@ -1,14 +1,15 @@
-const CARD_WIDTH = 230
-const CARD_GAP = 26
-const ROW_GAP = 132
-const LEVEL_GAP = 62
+const CARD_WIDTH = 250
+const CARD_GAP = 34
+const ROW_GAP = 150
+const LEVEL_GAP = 78
 const HEADER_WIDTH = 520
 const HEADER_HEIGHT = 96
 const COMPANY_WIDTH = 420
-const BLOCK_GAP_X = 84
-const BLOCK_GAP_Y = 108
+const BLOCK_GAP_X = 150
+const BLOCK_GAP_Y = 150
 const TOP = 56
-const DEPARTMENT_TOP = TOP + 170
+const DEPARTMENT_TOP = TOP + 190
+const MAX_PERSON_COLUMNS = 4
 
 export function normalizeCatalog(people, departments) {
   const departmentById = new Map(departments.map((department) => [department.id, department]))
@@ -44,12 +45,52 @@ export function buildFlowModel({ departments, people, onOpenPerson, onToggleDepa
   const activeDepartments = departments.filter((department) => department.status !== 'inactive')
   const expanded = expandedDepartmentIds || new Set()
   const peopleByDepartment = groupBy(people, 'department_id')
-  const departmentColumns = 3
-  const totalWidth = 3 * HEADER_WIDTH + 2 * BLOCK_GAP_X
-  const companyX = totalWidth / 2 - COMPANY_WIDTH / 2
   const activePeopleCount = people.filter((person) => person.status === 'active').length
   const departmentLayouts = []
-  let rowY = DEPARTMENT_TOP
+  const viewportColumns = 2
+  let cursorX = 0
+  let cursorY = DEPARTMENT_TOP
+  let rowMaxHeight = 0
+
+  const preparedDepartments = activeDepartments.map((department) => {
+    const departmentPeople = (peopleByDepartment.get(department.id) || []).sort(
+      (a, b) => a.hierarchy_order - b.hierarchy_order || a.full_name.localeCompare(b.full_name),
+    )
+    const isExpanded = expanded.has(department.id)
+    const blockWidth = getDepartmentBlockWidth(departmentPeople, isExpanded)
+    const blockHeight = getDepartmentBlockHeight(departmentPeople, isExpanded)
+
+    return {
+      department,
+      departmentPeople,
+      isExpanded,
+      blockWidth,
+      blockHeight,
+    }
+  })
+
+  preparedDepartments.forEach((layout, index) => {
+    if (index > 0 && index % viewportColumns === 0) {
+      cursorX = 0
+      cursorY += rowMaxHeight + BLOCK_GAP_Y
+      rowMaxHeight = 0
+    }
+
+    departmentLayouts.push({
+      ...layout,
+      x: cursorX,
+      y: cursorY,
+    })
+
+    cursorX += layout.blockWidth + BLOCK_GAP_X
+    rowMaxHeight = Math.max(rowMaxHeight, layout.blockHeight)
+  })
+
+  const totalWidth = Math.max(
+    COMPANY_WIDTH,
+    ...departmentLayouts.map((layout) => layout.x + layout.blockWidth),
+  )
+  const companyX = totalWidth / 2 - COMPANY_WIDTH / 2
 
   nodes.push({
     id: 'company-epayco',
@@ -63,39 +104,18 @@ export function buildFlowModel({ departments, people, onOpenPerson, onToggleDepa
     draggable: false,
   })
 
-  for (let index = 0; index < activeDepartments.length; index += departmentColumns) {
-    const rowDepartments = activeDepartments.slice(index, index + departmentColumns)
-    const rowLayouts = rowDepartments.map((department, columnIndex) => {
-      const departmentPeople = (peopleByDepartment.get(department.id) || []).sort(
-        (a, b) => a.hierarchy_order - b.hierarchy_order || a.full_name.localeCompare(b.full_name),
-      )
-      const isExpanded = expanded.has(department.id)
-      const blockHeight = getDepartmentBlockHeight(departmentPeople, isExpanded)
+  departmentLayouts.forEach(({ department, departmentPeople, isExpanded, blockHeight, blockWidth, x, y }) => {
+    const departmentX = x + blockWidth / 2 - HEADER_WIDTH / 2
 
-      return {
-        department,
-        departmentPeople,
-        isExpanded,
-        blockHeight,
-        x: columnIndex * (HEADER_WIDTH + BLOCK_GAP_X),
-        y: rowY,
-      }
-    })
-
-    departmentLayouts.push(...rowLayouts)
-    rowY += Math.max(...rowLayouts.map((layout) => layout.blockHeight)) + BLOCK_GAP_Y
-  }
-
-  departmentLayouts.forEach(({ department, departmentPeople, isExpanded, blockHeight, x, y }) => {
     focusPoints[department.id] = {
-      x: x + HEADER_WIDTH / 2,
+      x: x + blockWidth / 2,
       y: y + Math.min(blockHeight / 2, 420),
     }
 
     nodes.push({
       id: `department-${department.id}`,
       type: 'department',
-      position: { x, y },
+      position: { x: departmentX, y },
       data: {
         ...department,
         count: departmentPeople.filter((person) => person.status === 'active').length,
@@ -113,11 +133,10 @@ export function buildFlowModel({ departments, people, onOpenPerson, onToggleDepa
         edges,
         department,
         people: departmentPeople,
-        origin: { x, y: y + HEADER_HEIGHT + 46 },
+        origin: { x, y: y + HEADER_HEIGHT + 64, width: blockWidth },
         onOpenPerson,
       })
     }
-
   })
 
   return { nodes, edges, focusPoints }
@@ -133,16 +152,17 @@ function buildDepartmentPeople({ nodes, edges, department, people, origin, onOpe
     const levelPeople = peopleByLevel.get(level)
     const columns = getColumnCount(levelPeople.length)
     const levelWidth = columns * CARD_WIDTH + (columns - 1) * CARD_GAP
-    const startX = origin.x + (HEADER_WIDTH - levelWidth) / 2
+    const startX = origin.x + (origin.width - levelWidth) / 2
     const labelId = `level-${department.id}-${level}`
 
     nodes.push({
       id: labelId,
       type: 'level',
-      position: { x: origin.x, y: cursorY - 34 },
+      position: { x: origin.x, y: cursorY - 40 },
       data: { label: levelPeople[0]?.hierarchy_level || `Nivel ${level}` },
       selectable: false,
       draggable: false,
+      style: { width: origin.width },
     })
 
     levelPeople.forEach((person, personIndex) => {
@@ -185,6 +205,19 @@ function createEdge(id, source, target, stroke, strokeWidth = 1.35) {
   }
 }
 
+function getDepartmentBlockWidth(people, isExpanded) {
+  if (!isExpanded) return HEADER_WIDTH
+
+  const peopleByLevel = groupBy(people, 'hierarchy_order')
+  const widestLevel = Math.max(
+    1,
+    ...[...peopleByLevel.values()].map((levelPeople) => getColumnCount(levelPeople.length)),
+  )
+
+  const peopleWidth = widestLevel * CARD_WIDTH + (widestLevel - 1) * CARD_GAP
+  return Math.max(HEADER_WIDTH, peopleWidth)
+}
+
 function getDepartmentBlockHeight(people, isExpanded) {
   if (!isExpanded) return HEADER_HEIGHT
   const peopleByLevel = groupBy(people, 'hierarchy_order')
@@ -192,12 +225,13 @@ function getDepartmentBlockHeight(people, isExpanded) {
     const columns = getColumnCount(levelPeople.length)
     return height + Math.ceil(levelPeople.length / columns) * ROW_GAP + LEVEL_GAP
   }, 0)
-  return HEADER_HEIGHT + 46 + peopleHeight
+  return HEADER_HEIGHT + 64 + peopleHeight
 }
 
 function getColumnCount(count) {
   if (count <= 1) return 1
-  return 2
+  if (count <= MAX_PERSON_COLUMNS) return count
+  return MAX_PERSON_COLUMNS
 }
 
 function groupBy(items, key) {
