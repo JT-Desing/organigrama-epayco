@@ -1,4 +1,4 @@
-import { useCallback, useDeferredValue, useEffect, useMemo, useState } from 'react'
+import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Background,
   Controls,
@@ -33,6 +33,7 @@ import {
   X,
 } from 'lucide-react'
 import clsx from 'clsx'
+import { gsap } from 'gsap'
 import { createSupabaseClient, hasSupabaseConfig } from './lib/supabase'
 import {
   buildChangeSet,
@@ -48,6 +49,10 @@ const supabase = createSupabaseClient()
 const corporateDomain = import.meta.env.VITE_CORPORATE_DOMAIN || 'epayco.com'
 const adminEmail = (import.meta.env.VITE_ADMIN_EMAIL || 'julian.tobon@epayco.com').toLowerCase()
 const localDemoMode = !hasSupabaseConfig && import.meta.env.DEV
+
+function prefersReducedMotion() {
+  return typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+}
 
 function normalizeCorporateEmail(value, fallbackName = '') {
   const raw = String(value || fallbackName || '').trim().toLowerCase()
@@ -76,9 +81,10 @@ function DepartmentNode({ data }) {
         <div className="department-node__icon">
           <Building2 size={18} />
         </div>
-        <div>
+        <div className="department-node__copy">
+          <span className="department-node__eyebrow">Departamento</span>
           <p>{data.name}</p>
-          <span>Orden {data.sort_order} · {data.count} personas activas</span>
+          <span>Orden {data.sort_order} / {data.count} personas activas</span>
         </div>
         <span className="department-node__chevron" aria-hidden="true">
           <ChevronRight size={18} />
@@ -86,6 +92,21 @@ function DepartmentNode({ data }) {
       </div>
       <Handle type="source" position={Position.Bottom} />
     </button>
+  )
+}
+
+function CompanyNode({ data }) {
+  return (
+    <div className="company-node">
+      <Handle type="target" position={Position.Top} />
+      <div className="company-node__mark">eP</div>
+      <div>
+        <span>Empresa</span>
+        <strong>{data.name}</strong>
+        <small>{data.count} personas / {data.departments} areas</small>
+      </div>
+      <Handle type="source" position={Position.Bottom} />
+    </div>
   )
 }
 
@@ -110,7 +131,7 @@ function LevelNode({ data }) {
   return <div className="level-node">{data.label}</div>
 }
 
-const nodeTypes = { department: DepartmentNode, person: PersonNode, level: LevelNode }
+const nodeTypes = { company: CompanyNode, department: DepartmentNode, person: PersonNode, level: LevelNode }
 
 function App() {
   const [session, setSession] = useState(null)
@@ -131,10 +152,40 @@ function App() {
   const [adminDraft, setAdminDraft] = useState(createEmptyPerson())
   const [importState, setImportState] = useState(null)
   const [busyMessage, setBusyMessage] = useState('')
+  const loginPanelRef = useRef(null)
+  const appShellRef = useRef(null)
+  const topbarRef = useRef(null)
+  const sidebarRef = useRef(null)
+  const workspaceRef = useRef(null)
 
   const demoMode = localDemoMode
   const signedIn = demoMode || Boolean(session)
   const normalized = useMemo(() => normalizeCatalog(people, departments), [people, departments])
+
+  useEffect(() => {
+    if (signedIn || prefersReducedMotion() || !loginPanelRef.current) return
+    const ctx = gsap.context(() => {
+      gsap.fromTo(
+        loginPanelRef.current,
+        { autoAlpha: 0, y: 24, scale: 0.98 },
+        { autoAlpha: 1, y: 0, scale: 1, duration: 0.55, ease: 'power3.out' },
+      )
+    })
+    return () => ctx.revert()
+  }, [signedIn])
+
+  useEffect(() => {
+    if (!signedIn || prefersReducedMotion()) return
+    const targets = [topbarRef.current, sidebarRef.current, workspaceRef.current].filter(Boolean)
+    const ctx = gsap.context(() => {
+      gsap.fromTo(
+        targets,
+        { autoAlpha: 0, y: 12 },
+        { autoAlpha: 1, y: 0, duration: 0.5, stagger: 0.07, ease: 'power3.out' },
+      )
+    }, appShellRef.current)
+    return () => ctx.revert()
+  }, [signedIn])
 
   useEffect(() => {
     if (!localDemoMode) return
@@ -358,7 +409,7 @@ function App() {
   if (!signedIn) {
     return (
       <main className="login-shell">
-        <section className="login-panel" aria-labelledby="login-title">
+        <section ref={loginPanelRef} className="login-panel" aria-labelledby="login-title">
           <div className="brand-lock">
             <ShieldCheck size={28} />
           </div>
@@ -394,8 +445,9 @@ function App() {
 
   return (
     <ReactFlowProvider>
-      <div className={clsx('app-shell', !sidebarOpen && 'is-sidebar-collapsed')}>
+      <div ref={appShellRef} className={clsx('app-shell', !sidebarOpen && 'is-sidebar-collapsed')}>
         <TopBar
+          topbarRef={topbarRef}
           mode={effectiveMode}
           setMode={setMode}
           demoMode={demoMode}
@@ -405,7 +457,7 @@ function App() {
           sidebarOpen={sidebarOpen}
           onToggleSidebar={() => setSidebarOpen((open) => !open)}
         />
-        <aside className="control-rail" aria-label="Filtros del organigrama" aria-hidden={!sidebarOpen}>
+        <aside ref={sidebarRef} className="control-rail" aria-label="Filtros del organigrama" aria-hidden={!sidebarOpen}>
           <div className="metric-grid">
             <Metric icon={Users} label="Activas" value={metrics.activePeople} />
             <Metric icon={Clock3} label="Inactivas" value={metrics.inactivePeople} />
@@ -461,7 +513,7 @@ function App() {
           />
         </aside>
 
-        <main className="workspace">
+        <main ref={workspaceRef} className="workspace">
           {busyMessage && <div className="busy-banner">{busyMessage}</div>}
           {effectiveMode === 'org' ? (
             <OrgCanvas flowModel={flowModel} visiblePeople={renderedPeople} selectedDepartmentId={departmentFilter} />
@@ -500,9 +552,9 @@ function App() {
   )
 }
 
-function TopBar({ mode, setMode, demoMode, sessionEmail, signOut, isAdmin, sidebarOpen, onToggleSidebar }) {
+function TopBar({ topbarRef, mode, setMode, demoMode, sessionEmail, signOut, isAdmin, sidebarOpen, onToggleSidebar }) {
   return (
-    <header className="topbar">
+    <header ref={topbarRef} className="topbar">
       <div className="topbar__brand">
         <button
           type="button"
@@ -592,6 +644,7 @@ function DepartmentList({ departments, people, selectedId, onPick }) {
 
 function OrgCanvas({ flowModel, visiblePeople, selectedDepartmentId }) {
   const { fitView, setCenter } = useReactFlow()
+  const canvasRef = useRef(null)
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
@@ -610,8 +663,31 @@ function OrgCanvas({ flowModel, visiblePeople, selectedDepartmentId }) {
     return () => window.clearTimeout(timeout)
   }, [fitView, flowModel.focusPoints, selectedDepartmentId, setCenter, visiblePeople.length])
 
+  useEffect(() => {
+    if (prefersReducedMotion() || !canvasRef.current) return
+    let ctx
+    const timeout = window.setTimeout(() => {
+      ctx = gsap.context(() => {
+        gsap.fromTo(
+          '.react-flow__node',
+          { autoAlpha: 0, y: 14, scale: 0.96 },
+          { autoAlpha: 1, y: 0, scale: 1, duration: 0.38, stagger: 0.018, ease: 'power2.out' },
+        )
+        gsap.fromTo(
+          '.canvas-toolbar',
+          { autoAlpha: 0, y: -8 },
+          { autoAlpha: 1, y: 0, duration: 0.34, ease: 'power2.out' },
+        )
+        }, canvasRef.current)
+    }, 60)
+    return () => {
+      window.clearTimeout(timeout)
+      ctx?.revert()
+    }
+  }, [flowModel.nodes.length, selectedDepartmentId])
+
   return (
-    <section className="canvas-panel" aria-label="Canvas del organigrama">
+    <section ref={canvasRef} className="canvas-panel" aria-label="Canvas del organigrama">
       <div className="canvas-toolbar">
         <div>
           <strong>{visiblePeople.length}</strong>
