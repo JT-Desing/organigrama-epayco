@@ -34,6 +34,7 @@ export function normalizeCatalog(people, departments) {
       role: person.role || person.cargo || 'Cargo pendiente',
       status: person.status || 'active',
       department_name: department?.name || 'Departamento pendiente',
+      department_status: department?.status || 'active',
       hierarchy_order: hierarchyOrder,
       hierarchy_level: cleanLabel(person.hierarchy_level || person.group_name || person.subarea || `Nivel ${hierarchyOrder}`),
       department_sort_order: Number(person.department_sort_order || department?.sort_order || 999),

@@ -182,6 +182,14 @@ function App() {
   const demoMode = localDemoMode
   const signedIn = demoMode || Boolean(session)
   const normalized = useMemo(() => normalizeCatalog(people, departments), [people, departments])
+  const activeDepartments = useMemo(
+    () => normalized.departments.filter((department) => department.status !== 'inactive'),
+    [normalized.departments],
+  )
+  const catalogPeople = useMemo(
+    () => normalized.people.filter((person) => person.department_status !== 'inactive'),
+    [normalized.people],
+  )
 
   useEffect(() => {
     if (!supabase) return
@@ -234,7 +242,7 @@ function App() {
 
   const visiblePeople = useMemo(() => {
     const text = deferredQuery.trim().toLowerCase()
-    return normalized.people.filter((person) => {
+    return catalogPeople.filter((person) => {
       const matchesText =
         !text ||
         [person.full_name, person.role, person.email, person.department_name]
@@ -243,7 +251,7 @@ function App() {
       const matchesStatus = statusFilter === 'all' || person.status === statusFilter
       return matchesText && matchesStatus
     })
-  }, [deferredQuery, normalized.people, statusFilter])
+  }, [catalogPeople, deferredQuery, statusFilter])
 
   const effectiveExpandedDepartmentIds = useMemo(() => {
     if (departmentFilter !== 'all') return new Set([departmentFilter])
@@ -252,12 +260,12 @@ function App() {
 
   const metrics = useMemo(
     () => ({
-      activePeople: people.filter((person) => person.status === 'active').length,
-      inactivePeople: people.filter((person) => person.status === 'inactive').length,
-      departments: departments.filter((department) => department.status !== 'inactive').length,
+      activePeople: catalogPeople.filter((person) => person.status === 'active').length,
+      inactivePeople: catalogPeople.filter((person) => person.status === 'inactive').length,
+      departments: activeDepartments.length,
       admins: demoMode ? 'demo' : session?.user?.email,
     }),
-    [demoMode, departments, people, session],
+    [activeDepartments.length, catalogPeople, demoMode, session],
   )
 
   const selectDepartment = useCallback((id) => {
@@ -281,13 +289,13 @@ function App() {
   const flowModel = useMemo(
     () =>
       buildFlowModel({
-        departments: normalized.departments,
+        departments: activeDepartments,
         people: visiblePeople,
         onOpenPerson: (person) => setSelectedPerson(person),
         onToggleDepartment: toggleDepartment,
         expandedDepartmentIds: effectiveExpandedDepartmentIds,
       }),
-    [effectiveExpandedDepartmentIds, normalized.departments, toggleDepartment, visiblePeople],
+    [activeDepartments, effectiveExpandedDepartmentIds, toggleDepartment, visiblePeople],
   )
 
   const signIn = async (event) => {
@@ -462,7 +470,7 @@ function App() {
                 onChange={(event) => selectDepartment(event.target.value)}
               >
                 <option value="all">Todos los departamentos</option>
-                {normalized.departments.map((department) => (
+                {activeDepartments.map((department) => (
                   <option key={department.id} value={department.id}>
                     {department.name}
                   </option>
@@ -483,8 +491,8 @@ function App() {
           </div>
 
           <DepartmentList
-            departments={normalized.departments}
-            people={normalized.people}
+            departments={activeDepartments}
+            people={catalogPeople}
             selectedId={departmentFilter}
             onPick={selectDepartment}
           />
@@ -496,8 +504,8 @@ function App() {
             <OrgCanvas flowModel={flowModel} visiblePeople={visiblePeople} selectedDepartmentId={departmentFilter} />
           ) : (
             <AdminPanel
-              departments={normalized.departments}
-              people={normalized.people}
+              departments={activeDepartments}
+              people={catalogPeople}
               history={history}
               importState={importState}
               onFile={handleImportFile}
@@ -514,7 +522,7 @@ function App() {
         {selectedPerson && (
           <PersonDrawer
             person={selectedPerson}
-            people={normalized.people}
+            people={catalogPeople}
             onClose={() => setSelectedPerson(null)}
             onEdit={(person) => {
               setAdminDraft(person)
