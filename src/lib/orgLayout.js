@@ -1,15 +1,14 @@
-const CARD_WIDTH = 250
-const CARD_GAP = 34
-const ROW_GAP = 150
-const LEVEL_GAP = 78
-const HEADER_WIDTH = 520
-const HEADER_HEIGHT = 96
-const COMPANY_WIDTH = 420
-const BLOCK_GAP_X = 150
-const BLOCK_GAP_Y = 150
+const CARD_WIDTH = 260
+const CARD_GAP = 32
+const ROW_GAP = 158
+const LEVEL_GAP = 92
+const HEADER_WIDTH = 620
+const HEADER_HEIGHT = 104
+const COMPANY_WIDTH = 460
+const BLOCK_GAP_X = 110
+const BLOCK_GAP_Y = 148
 const TOP = 56
-const DEPARTMENT_TOP = TOP + 190
-const MAX_PERSON_COLUMNS = 4
+const DEPARTMENT_TOP = TOP + 184
 
 export function normalizeCatalog(people, departments) {
   const departmentById = new Map(departments.map((department) => [department.id, department]))
@@ -45,52 +44,12 @@ export function buildFlowModel({ departments, people, onOpenPerson, onToggleDepa
   const activeDepartments = departments.filter((department) => department.status !== 'inactive')
   const expanded = expandedDepartmentIds || new Set()
   const peopleByDepartment = groupBy(people, 'department_id')
+  const departmentColumns = 3
+  const totalWidth = departmentColumns * HEADER_WIDTH + (departmentColumns - 1) * BLOCK_GAP_X
+  const companyX = totalWidth / 2 - COMPANY_WIDTH / 2
   const activePeopleCount = people.filter((person) => person.status === 'active').length
   const departmentLayouts = []
-  const viewportColumns = 2
-  let cursorX = 0
-  let cursorY = DEPARTMENT_TOP
-  let rowMaxHeight = 0
-
-  const preparedDepartments = activeDepartments.map((department) => {
-    const departmentPeople = (peopleByDepartment.get(department.id) || []).sort(
-      (a, b) => a.hierarchy_order - b.hierarchy_order || a.full_name.localeCompare(b.full_name),
-    )
-    const isExpanded = expanded.has(department.id)
-    const blockWidth = getDepartmentBlockWidth(departmentPeople, isExpanded)
-    const blockHeight = getDepartmentBlockHeight(departmentPeople, isExpanded)
-
-    return {
-      department,
-      departmentPeople,
-      isExpanded,
-      blockWidth,
-      blockHeight,
-    }
-  })
-
-  preparedDepartments.forEach((layout, index) => {
-    if (index > 0 && index % viewportColumns === 0) {
-      cursorX = 0
-      cursorY += rowMaxHeight + BLOCK_GAP_Y
-      rowMaxHeight = 0
-    }
-
-    departmentLayouts.push({
-      ...layout,
-      x: cursorX,
-      y: cursorY,
-    })
-
-    cursorX += layout.blockWidth + BLOCK_GAP_X
-    rowMaxHeight = Math.max(rowMaxHeight, layout.blockHeight)
-  })
-
-  const totalWidth = Math.max(
-    COMPANY_WIDTH,
-    ...departmentLayouts.map((layout) => layout.x + layout.blockWidth),
-  )
-  const companyX = totalWidth / 2 - COMPANY_WIDTH / 2
+  let rowY = DEPARTMENT_TOP
 
   nodes.push({
     id: 'company-epayco',
@@ -104,42 +63,89 @@ export function buildFlowModel({ departments, people, onOpenPerson, onToggleDepa
     draggable: false,
   })
 
-  departmentLayouts.forEach(({ department, departmentPeople, isExpanded, blockHeight, blockWidth, x, y }) => {
-    const departmentX = x + blockWidth / 2 - HEADER_WIDTH / 2
+  for (let index = 0; index < activeDepartments.length; index += departmentColumns) {
+    const rowDepartments = activeDepartments.slice(index, index + departmentColumns)
+    const rowLayouts = rowDepartments.map((department, columnIndex) => {
+      const departmentPeople = (peopleByDepartment.get(department.id) || []).sort(
+        (a, b) => a.hierarchy_order - b.hierarchy_order || a.full_name.localeCompare(b.full_name),
+      )
+      const isExpanded = expanded.has(department.id)
+      const blockHeight = getDepartmentBlockHeight(departmentPeople, isExpanded)
 
+      return {
+        department,
+        departmentPeople,
+        isExpanded,
+        blockHeight,
+        x: columnIndex * (HEADER_WIDTH + BLOCK_GAP_X),
+        y: rowY,
+      }
+    })
+
+    departmentLayouts.push(...rowLayouts)
+    rowY += Math.max(...rowLayouts.map((layout) => layout.blockHeight)) + BLOCK_GAP_Y
+  }
+
+  departmentLayouts.forEach(({ department, departmentPeople, isExpanded, blockHeight, x, y }) => {
     focusPoints[department.id] = {
-      x: x + blockWidth / 2,
-      y: y + Math.min(blockHeight / 2, 420),
+      x: x + HEADER_WIDTH / 2,
+      y: y + (isExpanded ? Math.min(blockHeight / 2, 520) : HEADER_HEIGHT / 2),
+      zoom: isExpanded ? 0.66 : 0.82,
+    }
+
+    if (isExpanded) {
+      nodes.push({
+        id: `frame-${department.id}`,
+        type: 'departmentFrame',
+        position: { x: x - 30, y: y - 20 },
+        data: {
+          width: HEADER_WIDTH + 60,
+          height: blockHeight + 52,
+        },
+        draggable: false,
+        selectable: false,
+        zIndex: 0,
+      })
     }
 
     nodes.push({
       id: `department-${department.id}`,
       type: 'department',
-      position: { x: departmentX, y },
+      position: { x, y },
       data: {
         ...department,
         count: departmentPeople.filter((person) => person.status === 'active').length,
         expanded: isExpanded,
         onToggle: () => onToggleDepartment(department.id),
       },
-      draggable: true,
+      draggable: false,
+      zIndex: 3,
     })
 
-    edges.push(createEdge(`company-${department.id}`, 'company-epayco', `department-${department.id}`, '#5b7fa0', 1.15))
-
     if (isExpanded) {
+      edges.push(createEdge(`company-${department.id}`, 'company-epayco', `department-${department.id}`, '#5b7fa0', 1.15))
       buildDepartmentPeople({
         nodes,
         edges,
         department,
         people: departmentPeople,
-        origin: { x, y: y + HEADER_HEIGHT + 64, width: blockWidth },
+        origin: { x, y: y + HEADER_HEIGHT + 46 },
         onOpenPerson,
       })
     }
+
   })
 
-  return { nodes, edges, focusPoints }
+  return {
+    nodes,
+    edges,
+    focusPoints,
+    overview: {
+      x: totalWidth / 2,
+      y: TOP + Math.max(rowY - TOP, 760) / 2,
+      zoom: 0.48,
+    },
+  }
 }
 
 function buildDepartmentPeople({ nodes, edges, department, people, origin, onOpenPerson }) {
@@ -147,22 +153,23 @@ function buildDepartmentPeople({ nodes, edges, department, people, origin, onOpe
   const levels = [...peopleByLevel.keys()].sort((a, b) => Number(a) - Number(b))
   let cursorY = origin.y
   let previousLevelPeople = []
+  const renderedPersonIds = new Set()
 
   levels.forEach((level) => {
     const levelPeople = peopleByLevel.get(level)
     const columns = getColumnCount(levelPeople.length)
     const levelWidth = columns * CARD_WIDTH + (columns - 1) * CARD_GAP
-    const startX = origin.x + (origin.width - levelWidth) / 2
+    const startX = origin.x + (HEADER_WIDTH - levelWidth) / 2
     const labelId = `level-${department.id}-${level}`
 
     nodes.push({
       id: labelId,
       type: 'level',
-      position: { x: origin.x, y: cursorY - 40 },
+      position: { x: origin.x, y: cursorY - 48 },
       data: { label: levelPeople[0]?.hierarchy_level || `Nivel ${level}` },
       selectable: false,
       draggable: false,
-      style: { width: origin.width },
+      zIndex: 2,
     })
 
     levelPeople.forEach((person, personIndex) => {
@@ -179,14 +186,20 @@ function buildDepartmentPeople({ nodes, edges, department, people, origin, onOpe
         type: 'person',
         position,
         data: { ...person, onOpen: () => onOpenPerson(person) },
+        draggable: false,
+        zIndex: 4,
       })
 
-      if (previousLevelPeople.length > 0) {
+      if (person.manager_id && renderedPersonIds.has(person.manager_id)) {
+        edges.push(createEdge(`manager-${person.manager_id}-${person.id}`, `person-${person.manager_id}`, personNodeId, '#0e7490'))
+      } else if (previousLevelPeople.length > 0) {
         const parent = previousLevelPeople[personIndex % previousLevelPeople.length]
         edges.push(createEdge(`visual-${parent.id}-${person.id}`, `person-${parent.id}`, personNodeId, '#0e7490'))
       } else {
         edges.push(createEdge(`department-${department.id}-${person.id}`, `department-${department.id}`, personNodeId, '#b7dbe2'))
       }
+
+      renderedPersonIds.add(person.id)
     })
 
     previousLevelPeople = levelPeople
@@ -201,21 +214,10 @@ function createEdge(id, source, target, stroke, strokeWidth = 1.35) {
     target,
     type: 'smoothstep',
     animated: false,
+    interactionWidth: 18,
+    pathOptions: { borderRadius: 14 },
     style: { stroke, strokeWidth },
   }
-}
-
-function getDepartmentBlockWidth(people, isExpanded) {
-  if (!isExpanded) return HEADER_WIDTH
-
-  const peopleByLevel = groupBy(people, 'hierarchy_order')
-  const widestLevel = Math.max(
-    1,
-    ...[...peopleByLevel.values()].map((levelPeople) => getColumnCount(levelPeople.length)),
-  )
-
-  const peopleWidth = widestLevel * CARD_WIDTH + (widestLevel - 1) * CARD_GAP
-  return Math.max(HEADER_WIDTH, peopleWidth)
 }
 
 function getDepartmentBlockHeight(people, isExpanded) {
@@ -225,13 +227,12 @@ function getDepartmentBlockHeight(people, isExpanded) {
     const columns = getColumnCount(levelPeople.length)
     return height + Math.ceil(levelPeople.length / columns) * ROW_GAP + LEVEL_GAP
   }, 0)
-  return HEADER_HEIGHT + 64 + peopleHeight
+  return HEADER_HEIGHT + 46 + peopleHeight
 }
 
 function getColumnCount(count) {
   if (count <= 1) return 1
-  if (count <= MAX_PERSON_COLUMNS) return count
-  return MAX_PERSON_COLUMNS
+  return 2
 }
 
 function groupBy(items, key) {

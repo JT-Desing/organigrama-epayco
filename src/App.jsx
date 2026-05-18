@@ -4,6 +4,7 @@ import {
   Controls,
   Handle,
   MiniMap,
+  Panel,
   Position,
   ReactFlow,
   ReactFlowProvider,
@@ -43,12 +44,15 @@ import {
   summarizeChanges,
 } from './lib/importer'
 import { buildFlowModel, normalizeCatalog } from './lib/orgLayout'
-import './App.css'
+import demoSeed from './data/ipqSeed.json'
 
 const supabase = createSupabaseClient()
 const corporateDomain = import.meta.env.VITE_CORPORATE_DOMAIN || 'epayco.com'
 const adminEmail = (import.meta.env.VITE_ADMIN_EMAIL || 'julian.tobon@epayco.com').toLowerCase()
-const localDemoMode = !hasSupabaseConfig && import.meta.env.DEV
+const localDemoMode =
+  import.meta.env.DEV &&
+  (!hasSupabaseConfig || new URLSearchParams(window.location.search).has('demo'))
+const initialDepartmentId = new URLSearchParams(window.location.search).get('dept')
 
 function prefersReducedMotion() {
   return typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -110,6 +114,10 @@ function CompanyNode({ data }) {
   )
 }
 
+function DepartmentFrameNode({ data }) {
+  return <div className="department-frame-node" style={{ width: data.width, height: data.height }} />
+}
+
 function PersonNode({ data }) {
   return (
     <button className="person-node" type="button" onClick={data.onOpen}>
@@ -131,7 +139,13 @@ function LevelNode({ data }) {
   return <div className="level-node">{data.label}</div>
 }
 
-const nodeTypes = { company: CompanyNode, department: DepartmentNode, person: PersonNode, level: LevelNode }
+const nodeTypes = {
+  company: CompanyNode,
+  departmentFrame: DepartmentFrameNode,
+  department: DepartmentNode,
+  person: PersonNode,
+  level: LevelNode,
+}
 
 function App() {
   const [session, setSession] = useState(null)
@@ -139,16 +153,30 @@ function App() {
   const [authNotice, setAuthNotice] = useState('')
   const [authLoading, setAuthLoading] = useState(false)
   const [mode, setMode] = useState('org')
-  const [people, setPeople] = useState([])
-  const [departments, setDepartments] = useState([])
-  const [history, setHistory] = useState([])
+  const [people, setPeople] = useState(() => (localDemoMode ? demoSeed.people : []))
+  const [departments, setDepartments] = useState(() => (localDemoMode ? demoSeed.departments : []))
+  const [history, setHistory] = useState(() =>
+    localDemoMode
+      ? [
+          {
+            id: 'hist-demo',
+            action: 'Carga inicial demo',
+            actor: 'sistema',
+            target: `${demoSeed.people.length} personas / ${demoSeed.departments.length} departamentos`,
+            created_at: new Date().toISOString(),
+          },
+        ]
+      : [],
+  )
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [selectedPerson, setSelectedPerson] = useState(null)
   const [query, setQuery] = useState('')
   const deferredQuery = useDeferredValue(query)
-  const [departmentFilter, setDepartmentFilter] = useState('all')
+  const [departmentFilter, setDepartmentFilter] = useState(initialDepartmentId || 'all')
   const [statusFilter, setStatusFilter] = useState('active')
-  const [expandedDepartmentIds, setExpandedDepartmentIds] = useState(() => new Set())
+  const [expandedDepartmentIds, setExpandedDepartmentIds] = useState(() =>
+    initialDepartmentId ? new Set([initialDepartmentId]) : new Set(),
+  )
   const [adminDraft, setAdminDraft] = useState(createEmptyPerson())
   const [importState, setImportState] = useState(null)
   const [busyMessage, setBusyMessage] = useState('')
@@ -168,7 +196,14 @@ function App() {
       gsap.fromTo(
         loginPanelRef.current,
         { autoAlpha: 0, y: 24, scale: 0.98 },
-        { autoAlpha: 1, y: 0, scale: 1, duration: 0.55, ease: 'power3.out' },
+        {
+          autoAlpha: 1,
+          y: 0,
+          scale: 1,
+          duration: 0.55,
+          ease: 'power3.out',
+          clearProps: 'opacity,visibility,transform',
+        },
       )
     })
     return () => ctx.revert()
@@ -178,34 +213,17 @@ function App() {
     if (!signedIn || prefersReducedMotion()) return
     const targets = [topbarRef.current, sidebarRef.current, workspaceRef.current].filter(Boolean)
     const ctx = gsap.context(() => {
-      gsap.fromTo(
-        targets,
-        { autoAlpha: 0, y: 12 },
-        { autoAlpha: 1, y: 0, duration: 0.5, stagger: 0.07, ease: 'power3.out' },
-      )
+      gsap.set(targets, { clearProps: 'opacity,visibility,transform' })
+      gsap.from(targets, {
+        y: 12,
+        duration: 0.46,
+        stagger: 0.06,
+        ease: 'power3.out',
+        clearProps: 'transform',
+      })
     }, appShellRef.current)
     return () => ctx.revert()
   }, [signedIn])
-
-  useEffect(() => {
-    if (!localDemoMode) return
-
-    fetch('/src/data/ipqSeed.json')
-      .then((response) => response.json())
-      .then((demoSeed) => {
-        setPeople(demoSeed.people)
-        setDepartments(demoSeed.departments)
-        setHistory([
-          {
-            id: 'hist-demo',
-            action: 'Carga inicial demo',
-            actor: 'sistema',
-            target: `${demoSeed.people.length} personas / ${demoSeed.departments.length} departamentos`,
-            created_at: new Date().toISOString(),
-          },
-        ])
-      })
-  }, [])
 
   useEffect(() => {
     if (!supabase) return
@@ -270,15 +288,9 @@ function App() {
   }, [deferredQuery, normalized.people, statusFilter])
 
   const effectiveExpandedDepartmentIds = useMemo(() => {
-    const next = new Set(expandedDepartmentIds)
-    if (departmentFilter !== 'all') next.add(departmentFilter)
-    return next
+    if (departmentFilter !== 'all') return new Set([departmentFilter])
+    return expandedDepartmentIds
   }, [departmentFilter, expandedDepartmentIds])
-
-  const renderedPeople = useMemo(
-    () => visiblePeople.filter((person) => effectiveExpandedDepartmentIds.has(person.department_id)),
-    [effectiveExpandedDepartmentIds, visiblePeople],
-  )
 
   const metrics = useMemo(
     () => ({
@@ -293,23 +305,18 @@ function App() {
   const selectDepartment = useCallback((id) => {
     setDepartmentFilter(id)
     setMode('org')
-    if (id !== 'all') {
-      setExpandedDepartmentIds((current) => new Set(current).add(id))
-    }
+    setExpandedDepartmentIds(id === 'all' ? new Set() : new Set([id]))
   }, [])
 
   const toggleDepartment = useCallback((id) => {
     setMode('org')
     setExpandedDepartmentIds((current) => {
-      const next = new Set(current)
-      if (next.has(id)) {
-        next.delete(id)
+      if (current.has(id)) {
         setDepartmentFilter('all')
-      } else {
-        next.add(id)
-        setDepartmentFilter(id)
+        return new Set()
       }
-      return next
+      setDepartmentFilter(id)
+      return new Set([id])
     })
   }, [])
 
@@ -516,7 +523,7 @@ function App() {
         <main ref={workspaceRef} className="workspace">
           {busyMessage && <div className="busy-banner">{busyMessage}</div>}
           {effectiveMode === 'org' ? (
-            <OrgCanvas flowModel={flowModel} visiblePeople={renderedPeople} selectedDepartmentId={departmentFilter} />
+            <OrgCanvas flowModel={flowModel} visiblePeople={visiblePeople} selectedDepartmentId={departmentFilter} />
           ) : (
             <AdminPanel
               departments={normalized.departments}
@@ -643,25 +650,43 @@ function DepartmentList({ departments, people, selectedId, onPick }) {
 }
 
 function OrgCanvas({ flowModel, visiblePeople, selectedDepartmentId }) {
-  const { fitView, setCenter } = useReactFlow()
+  const { fitView, setViewport } = useReactFlow()
   const canvasRef = useRef(null)
 
-  useEffect(() => {
-    const timeout = window.setTimeout(() => {
-      if (selectedDepartmentId && selectedDepartmentId !== 'all') {
-        const focusPoint = flowModel.focusPoints?.[selectedDepartmentId]
-        if (focusPoint) {
-          setCenter(focusPoint.x, focusPoint.y, {
-            zoom: 0.82,
-            duration: 650,
-          })
-          return
-        }
+  const buildViewport = useCallback((centerX, centerY, zoom) => {
+    const rect = canvasRef.current?.getBoundingClientRect()
+    const width = rect?.width || 1200
+    const height = rect?.height || 820
+    return {
+      x: width / 2 - centerX * zoom,
+      y: height / 2 - centerY * zoom,
+      zoom,
+    }
+  }, [])
+
+  const focusCanvas = useCallback(() => {
+    if (selectedDepartmentId && selectedDepartmentId !== 'all') {
+      const focusPoint = flowModel.focusPoints?.[selectedDepartmentId]
+      if (focusPoint) {
+        setViewport(buildViewport(focusPoint.x, focusPoint.y, focusPoint.zoom || 0.78), { duration: 650 })
+        return
       }
-      fitView({ padding: 0.18, duration: 450 })
-    }, 100)
+    }
+
+    if (flowModel.overview) {
+      setViewport(buildViewport(flowModel.overview.x, flowModel.overview.y, flowModel.overview.zoom), { duration: 650 })
+      return
+    }
+
+    fitView({ padding: 0.32, duration: 450 })
+  }, [buildViewport, fitView, flowModel.focusPoints, flowModel.overview, selectedDepartmentId, setViewport])
+
+  useEffect(() => {
+    if (flowModel.nodes.length === 0) return undefined
+    if (!selectedDepartmentId || selectedDepartmentId === 'all') return undefined
+    const timeout = window.setTimeout(focusCanvas, 700)
     return () => window.clearTimeout(timeout)
-  }, [fitView, flowModel.focusPoints, selectedDepartmentId, setCenter, visiblePeople.length])
+  }, [flowModel.nodes.length, focusCanvas, selectedDepartmentId, visiblePeople.length])
 
   useEffect(() => {
     if (prefersReducedMotion() || !canvasRef.current) return
@@ -669,14 +694,26 @@ function OrgCanvas({ flowModel, visiblePeople, selectedDepartmentId }) {
     const timeout = window.setTimeout(() => {
       ctx = gsap.context(() => {
         gsap.fromTo(
-          '.react-flow__node',
-          { autoAlpha: 0, y: 14, scale: 0.96 },
-          { autoAlpha: 1, y: 0, scale: 1, duration: 0.38, stagger: 0.018, ease: 'power2.out' },
+          '.company-node, .department-node, .person-node, .level-node',
+          { y: 14, scale: 0.96 },
+          {
+            y: 0,
+            scale: 1,
+            duration: 0.38,
+            stagger: 0.018,
+            ease: 'power2.out',
+            clearProps: 'transform',
+          },
+        )
+        gsap.fromTo(
+          '.react-flow__node-departmentFrame',
+          { scale: 0.985 },
+          { scale: 1, duration: 0.28, ease: 'power2.out', clearProps: 'transform' },
         )
         gsap.fromTo(
           '.canvas-toolbar',
-          { autoAlpha: 0, y: -8 },
-          { autoAlpha: 1, y: 0, duration: 0.34, ease: 'power2.out' },
+          { y: -8 },
+          { y: 0, duration: 0.34, ease: 'power2.out', clearProps: 'transform' },
         )
         }, canvasRef.current)
     }, 60)
@@ -693,7 +730,7 @@ function OrgCanvas({ flowModel, visiblePeople, selectedDepartmentId }) {
           <strong>{visiblePeople.length}</strong>
           <span>personas visibles</span>
         </div>
-        <button type="button" onClick={() => fitView({ padding: 0.18, duration: 450 })}>
+        <button type="button" onClick={focusCanvas}>
           <CheckCircle2 size={17} />
           Ajustar vista
         </button>
@@ -707,12 +744,17 @@ function OrgCanvas({ flowModel, visiblePeople, selectedDepartmentId }) {
         }}
         minZoom={0.18}
         maxZoom={1.8}
-        fitView
+        defaultViewport={{ x: 100, y: 145, zoom: 0.54 }}
+        nodesDraggable={false}
+        nodesConnectable={false}
         proOptions={{ hideAttribution: true }}
       >
         <Background color="#cbd5e1" gap={22} size={1} />
         <MiniMap pannable zoomable nodeStrokeWidth={3} />
         <Controls position="bottom-right" />
+        <Panel position="top-right" className="canvas-hint">
+          Haz clic en un departamento para desplegarlo
+        </Panel>
       </ReactFlow>
       {flowModel.nodes.length === 0 && (
         <div className="canvas-empty">
