@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "generate:seed": "node scripts/generate-master-data.mjs",
     "lint": "eslint .",
     "preview": "vite preview"
   },
@@ -14,7 +15,6 @@
     "@xyflow/react": "^12.10.2",
     "clsx": "^2.1.1",
     "exceljs": "^4.4.0",
-    "gsap": "^3.15.0",
     "lucide-react": "^1.16.0",
     "papaparse": "^5.5.3",
     "react": "^19.2.6",

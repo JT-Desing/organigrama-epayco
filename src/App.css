@@ -12,6 +12,40 @@
   --panel: rgba(255, 255, 255, 0.92);
 }
 
+@keyframes surfaceIn {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes departmentOpen {
+  0% {
+    transform: translateY(0) scale(0.99);
+  }
+  62% {
+    transform: translateY(-3px) scale(1.006);
+  }
+  100% {
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes nodeReveal {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 .login-shell {
   min-height: 100vh;
   display: grid;
@@ -30,6 +64,13 @@
   color: #f8fafc;
   background: rgba(15, 23, 42, 0.86);
   box-shadow: 0 24px 70px rgba(2, 6, 23, 0.38);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .login-panel,
+  .app-shell {
+    animation: surfaceIn 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
 }
 
 .brand-lock,
@@ -137,7 +178,8 @@
   font-weight: 800;
   transition:
     background 180ms ease,
-    box-shadow 180ms ease;
+    box-shadow 180ms ease,
+    transform 180ms ease;
 }
 
 .login-form button:hover,
@@ -146,6 +188,7 @@
 .file-input:hover {
   background: #5eead4;
   box-shadow: 0 12px 24px rgba(20, 184, 166, 0.22);
+  transform: translateY(-1px);
 }
 
 .form-notice {
@@ -229,10 +272,16 @@
   width: 42px;
   height: 42px;
   border-radius: 8px;
-  color: #f8fafc;
-  background: linear-gradient(135deg, #16c7bd, #087d8f);
+  background: rgba(255, 255, 255, 0.04);
   box-shadow: 0 12px 28px rgba(20, 184, 166, 0.32);
-  font-weight: 900;
+  overflow: hidden;
+}
+
+.logo-mark img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
 }
 
 .topbar strong {
@@ -584,7 +633,7 @@
   color: #e6fbff;
   background: linear-gradient(135deg, #0e7490, #0f766e);
   box-shadow: 0 12px 24px rgba(8, 145, 178, 0.2);
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .canvas-hint {
@@ -623,18 +672,6 @@
   color: #64748b;
 }
 
-.department-frame-node {
-  border: 1px solid rgba(125, 211, 252, 0.24);
-  border-radius: 8px;
-  background:
-    linear-gradient(180deg, rgba(236, 254, 255, 0.82), rgba(255, 255, 255, 0.38)),
-    radial-gradient(circle at 50% 0%, rgba(20, 184, 166, 0.12), transparent 58%);
-  box-shadow:
-    0 28px 64px rgba(15, 23, 42, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 0.82);
-  pointer-events: none;
-}
-
 .company-node {
   width: 460px;
   min-height: 96px;
@@ -658,11 +695,18 @@
   width: 58px;
   height: 58px;
   border-radius: 8px;
-  color: #ffffff;
-  background: linear-gradient(135deg, #16c7bd, #087d8f);
+  background: rgba(255, 255, 255, 0.06);
   font-size: 1.35rem;
   font-weight: 900;
   box-shadow: 0 12px 30px rgba(20, 184, 166, 0.35);
+  overflow: hidden;
+}
+
+.company-node__mark img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
 }
 
 .company-node span,
@@ -696,6 +740,8 @@
   width: 620px;
   min-height: 104px;
   display: block;
+  position: relative;
+  overflow: hidden;
   padding: 14px 16px;
   border: 1px solid rgba(125, 211, 252, 0.52);
   border-radius: 8px;
@@ -703,6 +749,7 @@
     radial-gradient(circle at 0% 50%, rgba(34, 211, 238, 0.17), transparent 34%),
     linear-gradient(135deg, #ffffff 0%, #f8fcff 100%);
   color: #0a1930;
+  cursor: pointer;
   text-align: left;
   box-shadow:
     0 16px 32px rgba(15, 23, 42, 0.11),
@@ -714,6 +761,16 @@
     background 180ms ease;
 }
 
+.department-node::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(20, 184, 166, 0.12), transparent 42%);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 180ms ease;
+}
+
 .department-node:hover {
   border-color: #22d3ee;
   transform: translateY(-2px);
@@ -722,11 +779,20 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.95);
 }
 
+.department-node:hover::before,
+.department-node.is-expanded::before {
+  opacity: 1;
+}
+
 .department-node.is-expanded {
   border-color: #0891b2;
   background:
     linear-gradient(90deg, rgba(8, 145, 178, 0.14), transparent 55%),
     linear-gradient(135deg, #ffffff 0%, #ecfeff 100%);
+  box-shadow:
+    0 24px 48px rgba(8, 145, 178, 0.2),
+    0 0 0 1px rgba(20, 184, 166, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96);
 }
 
 .department-node__header {
@@ -758,7 +824,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   color: #0a1930;
-  font-weight: 900;
+  font-weight: 820;
   white-space: nowrap;
   letter-spacing: 0;
 }
@@ -797,26 +863,27 @@
 
 .level-node {
   width: 620px;
-  min-height: 32px;
+  min-height: 34px;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0 18px;
+  padding: 0 20px;
   border: 1px solid #d2f2f0;
   border-radius: 999px;
   color: #0f766e;
   background: linear-gradient(135deg, rgba(236, 254, 255, 0.96) 0%, rgba(231, 248, 245, 0.96) 100%);
   font-size: 0.68rem;
-  font-weight: 800;
+  font-weight: 850;
   letter-spacing: 0.06em;
-  line-height: 1;
+  line-height: 1.2;
   text-align: center;
   text-transform: uppercase;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  white-space: normal;
 }
 
 .person-node {
-  width: 260px;
+  width: 252px;
   min-height: 108px;
   display: grid;
   grid-template-columns: 36px 1fr;
@@ -826,6 +893,7 @@
   border: 1px solid rgba(148, 163, 184, 0.28);
   border-radius: 8px;
   color: #12333d;
+  cursor: pointer;
   background: linear-gradient(180deg, #ffffff 0%, #f9fdff 100%);
   text-align: left;
   box-shadow: 0 10px 22px rgba(15, 82, 100, 0.08);
@@ -867,7 +935,7 @@
   color: #0f172a;
   font-size: 0.75rem;
   line-height: 1.2;
-  font-weight: 800;
+  font-weight: 820;
   text-overflow: ellipsis;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -879,7 +947,7 @@
   font-size: 0.68rem;
   line-height: 1.25;
   text-overflow: ellipsis;
-  -webkit-line-clamp: 1;
+  -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
 }
 
@@ -896,6 +964,17 @@
   font-weight: 900;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .department-node.is-expanded {
+    animation: departmentOpen 300ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .person-node,
+  .level-node {
+    animation: nodeReveal 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
 }
 
 .react-flow__minimap {
@@ -928,6 +1007,18 @@
   filter: drop-shadow(0 4px 8px rgba(15, 23, 42, 0.12));
 }
 
+.react-flow__handle {
+  width: 7px;
+  height: 7px;
+  border: 1px solid rgba(8, 145, 178, 0.34);
+  background: #ffffff;
+}
+
+.react-flow__node:focus,
+.react-flow__node:focus-visible {
+  outline: none;
+}
+
 .drawer {
   position: fixed;
   top: 78px;
@@ -946,6 +1037,16 @@
   display: flex;
   justify-content: space-between;
   align-items: start;
+}
+
+.drawer .icon-button {
+  color: #0f2742;
+  background: #f8fafc;
+}
+
+.drawer .icon-button:hover {
+  color: #006a7a;
+  background: #ecfeff;
 }
 
 .drawer__avatar {

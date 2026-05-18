@@ -1,13 +1,24 @@
 const headerAliases = {
-  full_name: ['nombre', 'nombre completo', 'nombre mostrado', 'name', 'full name'],
-  role: ['cargo', 'posicion', 'posición', 'nombre posicion', 'nombre posición', 'nombre puesto', 'role'],
-  email: ['correo', 'correo corporativo', 'email', 'mail'],
-  department_name: ['departamento', 'nombre departamento', 'area', 'área', 'department'],
-  manager_name: ['jefe directo', 'jefe', 'manager', 'lider', 'líder'],
+  full_name: ['nombre', 'nombre completo', 'nombre mostrado', 'nombre base', 'name', 'full name'],
+  role: ['cargo', 'cargo base', 'posicion', 'nombre posicion', 'nombre puesto', 'cargo o tipo', 'role'],
+  email: ['correo', 'correo corporativo', 'correo electronico', 'email', 'mail'],
+  department_name: ['departamento', 'nombre departamento', 'departamento pdf', 'departamento base', 'area', 'department'],
+  manager_name: ['jefe directo', 'jefe', 'manager', 'lider', 'reporta a'],
   status: ['estado', 'status'],
   department_sort_order: ['orden departamento', 'orden depto'],
-  hierarchy_order: ['orden jerarquico', 'orden jerárquico'],
-  hierarchy_level: ['nivel jerarquico', 'nivel jerárquico', 'nivel'],
+  hierarchy_order: ['nivel jerarquico', 'orden jerarquico', 'nivel', 'orden'],
+  hierarchy_level: ['nivel nombre', 'nivel jerarquico texto', 'nivel rol'],
+  subarea: ['subarea pdf', 'subarea'],
+  group_name: ['grupo pdf', 'grupo'],
+  global_order: ['orden global'],
+  group_order: ['orden en grupo'],
+  source_person_id: ['persona id sugerido', 'base id', 'id'],
+  source_parent_id: ['parent id sugerido', 'parent id'],
+  source_pages: ['paginas'],
+  match_status: ['match estado'],
+  match_score: ['score match'],
+  email_source: ['fuente correo'],
+  email_status: ['estado correo'],
 }
 
 const CORPORATE_EMAIL_DOMAIN = 'epayco.com'
@@ -21,6 +32,10 @@ export function createEmptyPerson() {
     department_id: '',
     manager_id: null,
     status: 'active',
+    hierarchy_order: 99,
+    hierarchy_level: '',
+    subarea: '',
+    group_name: '',
     updated_at: new Date().toISOString(),
   }
 }
@@ -38,39 +53,41 @@ export async function parseWorkbookFile(file) {
   const data = await file.arrayBuffer()
   const workbook = new ExcelJS.Workbook()
   await workbook.xlsx.load(data)
-  const worksheet = workbook.worksheets[0]
+  const worksheet = findWorksheet(workbook)
   if (!worksheet) return []
 
-  const headers = []
-  worksheet.getRow(1).eachCell((cell, colNumber) => {
-    headers[colNumber] = clean(cell.value)
-  })
+  const rows = readWorksheetRows(worksheet)
+  const emailRows = readWorksheetRows(workbook.getWorksheet('Correos_Extraidos'))
+  if (!emailRows.length) return rows
 
-  const rows = []
-  worksheet.eachRow((row, rowNumber) => {
-    if (rowNumber === 1) return
-    const record = {}
-    row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
-      const key = headers[colNumber]
-      if (key) record[key] = clean(readCellValue(cell.value))
-    })
-    if (Object.values(record).some(Boolean)) rows.push(record)
+  const emailByName = emailRows.reduce((map, row) => {
+    const normalized = normalizeRawRow(row)
+    const name = pick(normalized, 'full_name')
+    const email = pick(normalized, 'email')
+    if (name && email) map.set(nameKey(name), email)
+    return map
+  }, new Map())
+
+  return rows.map((row) => {
+    const normalized = normalizeRawRow(row)
+    const fullName = pick(normalized, 'full_name')
+    const email = pick(normalized, 'email')
+    if (email || !fullName) return row
+    return { ...row, 'Correo electrónico': emailByName.get(nameKey(fullName)) || '' }
   })
-  return rows
 }
 
 export function mapImportedRows(rows) {
   return rows
     .map((row, index) => {
-      const normalized = Object.entries(row).reduce((acc, [key, value]) => {
-        acc[normalizeHeader(key)] = clean(value)
-        return acc
-      }, {})
-
+      const normalized = normalizeRawRow(row)
       const fullName = pick(normalized, 'full_name')
+      const hierarchyOrder = Number(pick(normalized, 'hierarchy_order') || 99)
+      const subarea = pick(normalized, 'subarea')
+      const groupName = pick(normalized, 'group_name')
 
       return {
-        sourceRow: index + 2,
+        sourceRow: row.__rowNumber || index + 2,
         full_name: fullName,
         role: pick(normalized, 'role') || 'Cargo pendiente',
         email: normalizeEmail(pick(normalized, 'email'), fullName),
@@ -78,8 +95,19 @@ export function mapImportedRows(rows) {
         manager_name: pick(normalized, 'manager_name'),
         status: normalizeStatus(pick(normalized, 'status')),
         department_sort_order: Number(pick(normalized, 'department_sort_order') || 999),
-        hierarchy_order: Number(pick(normalized, 'hierarchy_order') || 99),
-        hierarchy_level: pick(normalized, 'hierarchy_level') || 'Sin nivel',
+        hierarchy_order: hierarchyOrder,
+        hierarchy_level: pick(normalized, 'hierarchy_level') || groupName || subarea || `Nivel ${hierarchyOrder}`,
+        subarea,
+        group_name: groupName,
+        global_order: Number(pick(normalized, 'global_order') || index + 1),
+        group_order: Number(pick(normalized, 'group_order') || index + 1),
+        source_person_id: pick(normalized, 'source_person_id'),
+        source_parent_id: pick(normalized, 'source_parent_id'),
+        source_pages: pick(normalized, 'source_pages'),
+        match_status: pick(normalized, 'match_status'),
+        match_score: nullableNumber(pick(normalized, 'match_score')),
+        email_source: pick(normalized, 'email_source'),
+        email_status: pick(normalized, 'email_status'),
       }
     })
     .filter((row) => row.full_name || row.email || row.department_name !== 'Departamento pendiente')
@@ -91,6 +119,9 @@ export function buildChangeSet(importedRows, currentPeople, currentDepartments) 
   const departmentsByName = new Map(currentDepartments.map((item) => [item.name.toLowerCase(), item]))
   const peopleByEmail = new Map(currentPeople.filter((item) => item.email).map((item) => [item.email.toLowerCase(), item]))
   const peopleByName = new Map(currentPeople.map((item) => [item.full_name.toLowerCase(), item]))
+  const peopleBySourceId = new Map(
+    currentPeople.filter((item) => item.source_person_id).map((item) => [item.source_person_id, item]),
+  )
   const importedKeys = new Set()
 
   const newPeople = []
@@ -105,15 +136,19 @@ export function buildChangeSet(importedRows, currentPeople, currentDepartments) 
     if (!row.department_name) issues.push(`Fila ${row.sourceRow}: falta departamento.`)
     if (row.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(row.email)) issues.push(`Fila ${row.sourceRow}: correo invalido.`)
 
-    const key = (row.email || row.full_name).toLowerCase()
+    const key = (row.source_person_id || row.email || row.full_name).toLowerCase()
     if (importedByKey.has(key)) issues.push(`Duplicado detectado: ${row.full_name || row.email}.`)
     importedByKey.set(key, row)
     importedKeys.add(key)
+    if (row.email) importedKeys.add(row.email.toLowerCase())
     if (row.full_name) importedKeys.add(row.full_name.toLowerCase())
 
     if (!departmentsByName.has(row.department_name.toLowerCase())) newDepartments.push(row.department_name)
 
-    const existing = (row.email && peopleByEmail.get(row.email.toLowerCase())) || peopleByName.get(row.full_name.toLowerCase())
+    const existing =
+      (row.source_person_id && peopleBySourceId.get(row.source_person_id)) ||
+      (row.email && peopleByEmail.get(row.email.toLowerCase())) ||
+      peopleByName.get(row.full_name.toLowerCase())
     if (!existing) {
       newPeople.push(row)
       continue
@@ -129,17 +164,23 @@ export function buildChangeSet(importedRows, currentPeople, currentDepartments) 
       departmentChanges.push({ person: row.full_name, after: row.department_name })
       changedFields.push('departamento')
     }
-    if (row.manager_name) {
-      managerChanges.push({ person: row.full_name, after: row.manager_name })
+    if (row.manager_name || row.source_parent_id) {
+      managerChanges.push({ person: row.full_name, after: row.manager_name || row.source_parent_id })
       changedFields.push('jefe directo')
     }
     if (changedFields.length) updatedPeople.push({ row, changedFields })
   }
 
   const missingPeople = currentPeople.filter((person) => {
+    const sourceKey = person.source_person_id?.toLowerCase()
     const key = (person.email || person.full_name).toLowerCase()
-    const nameKey = person.full_name.toLowerCase()
-    return person.status === 'active' && !importedKeys.has(key) && !importedKeys.has(nameKey)
+    const nameKeyValue = person.full_name.toLowerCase()
+    return (
+      person.status === 'active' &&
+      (!sourceKey || !importedKeys.has(sourceKey)) &&
+      !importedKeys.has(key) &&
+      !importedKeys.has(nameKeyValue)
+    )
   })
 
   return {
@@ -165,6 +206,47 @@ export function summarizeChanges(changes) {
     managerChanges: changes.managerChanges.length,
     issues: changes.issues.length,
   }
+}
+
+function findWorksheet(workbook) {
+  return (
+    workbook.getWorksheet('BD_Organizada_PDF') ||
+    workbook.worksheets.find((worksheet) => {
+      const headers = []
+      worksheet.getRow(1).eachCell((cell) => headers.push(normalizeHeader(readCellValue(cell.value))))
+      return headers.includes('departamento pdf') && headers.includes('nombre')
+    }) ||
+    workbook.worksheets[0]
+  )
+}
+
+function readWorksheetRows(worksheet) {
+  if (!worksheet) return []
+
+  const headers = []
+  worksheet.getRow(1).eachCell((cell, colNumber) => {
+    headers[colNumber] = clean(readCellValue(cell.value))
+  })
+
+  const rows = []
+  worksheet.eachRow((row, rowNumber) => {
+    if (rowNumber === 1) return
+    const record = { __rowNumber: rowNumber }
+    row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+      const key = headers[colNumber]
+      if (key) record[key] = clean(readCellValue(cell.value))
+    })
+    if (Object.entries(record).some(([key, value]) => key !== '__rowNumber' && Boolean(value))) rows.push(record)
+  })
+  return rows
+}
+
+function normalizeRawRow(row) {
+  return Object.entries(row).reduce((acc, [key, value]) => {
+    if (key === '__rowNumber') return acc
+    acc[normalizeHeader(key)] = clean(value)
+    return acc
+  }, {})
 }
 
 function pick(row, canonicalKey) {
@@ -199,6 +281,10 @@ function slugEmailName(value) {
     .replace(/^\.+|\.+$/g, '')
 }
 
+function nameKey(value) {
+  return slugEmailName(value).replace(/\./g, '')
+}
+
 function readCellValue(value) {
   if (value && typeof value === 'object') {
     if ('text' in value) return value.text
@@ -220,4 +306,9 @@ function normalizeStatus(value) {
   const status = clean(value).toLowerCase()
   if (['inactivo', 'inactive', 'retirado', 'baja'].includes(status)) return 'inactive'
   return 'active'
+}
+
+function nullableNumber(value) {
+  const number = Number(clean(value).replace(',', '.'))
+  return Number.isFinite(number) ? number : null
 }

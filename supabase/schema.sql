@@ -21,10 +21,33 @@ create table if not exists public.people (
   department_sort_order integer,
   hierarchy_order integer not null default 99,
   hierarchy_level text,
+  subarea text,
+  group_name text,
+  global_order integer,
+  group_order integer,
+  source_person_id text,
+  source_parent_id text,
+  source_pages text,
+  match_status text,
+  match_score numeric,
+  email_source text,
+  email_status text,
   rule_applied text,
   source_row text,
   updated_at timestamptz not null default now()
 );
+
+alter table public.people add column if not exists subarea text;
+alter table public.people add column if not exists group_name text;
+alter table public.people add column if not exists global_order integer;
+alter table public.people add column if not exists group_order integer;
+alter table public.people add column if not exists source_person_id text;
+alter table public.people add column if not exists source_parent_id text;
+alter table public.people add column if not exists source_pages text;
+alter table public.people add column if not exists match_status text;
+alter table public.people add column if not exists match_score numeric;
+alter table public.people add column if not exists email_source text;
+alter table public.people add column if not exists email_status text;
 
 create table if not exists public.authorized_users (
   email text primary key,
@@ -203,6 +226,8 @@ with check (private.is_admin());
 create index if not exists people_department_id_idx on public.people(department_id);
 create index if not exists people_manager_id_idx on public.people(manager_id);
 create index if not exists people_status_idx on public.people(status);
+create index if not exists people_source_person_id_idx on public.people(source_person_id);
+create index if not exists people_global_order_idx on public.people(global_order);
 create index if not exists departments_parent_id_idx on public.departments(parent_id);
 
 -- Primer administrador ePayco.

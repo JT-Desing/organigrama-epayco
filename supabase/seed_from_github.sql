@@ -1,23 +1,9 @@
 create extension if not exists http with schema extensions;
 
-create or replace function public.seed_uuid(input text)
-returns uuid
-language sql
-immutable
-as $$
-  select (
-    substr(md5(input), 1, 8) || '-' ||
-    substr(md5(input), 9, 4) || '-' ||
-    '5' || substr(md5(input), 14, 3) || '-' ||
-    'a' || substr(md5(input), 18, 3) || '-' ||
-    substr(md5(input), 21, 12)
-  )::uuid;
-$$;
-
 do $$
 declare
   payload jsonb;
-  seed_url text := 'https://raw.githubusercontent.com/JT-Desing/organigrama-epayco/main/src/data/ipqSeed.json';
+  seed_url text := 'https://raw.githubusercontent.com/JT-Desing/organigrama-epayco/main/src/data/epaycoSeed.json';
 begin
   select content::jsonb
   into payload
@@ -28,16 +14,14 @@ begin
     raise exception 'No fue posible descargar la semilla desde %', seed_url;
   end if;
 
-  insert into public.departments (id, name, parent_id, sort_order, status)
+  insert into public.departments (id, name, parent_id, sort_order, status, updated_at)
   select
-    public.seed_uuid('department:' || d.id),
+    d.id::uuid,
     d.name,
-    case
-      when nullif(d.parent_id, '') is null then null
-      else public.seed_uuid('department:' || d.parent_id)
-    end,
+    nullif(d.parent_id, '')::uuid,
     coalesce(d.sort_order, 999),
-    coalesce(nullif(d.status, ''), 'active')
+    coalesce(nullif(d.status, ''), 'active'),
+    now()
   from jsonb_to_recordset(payload -> 'departments') as d(
     id text,
     name text,
@@ -63,23 +47,43 @@ begin
     department_sort_order,
     hierarchy_order,
     hierarchy_level,
-    rule_applied,
+    subarea,
+    group_name,
+    global_order,
+    group_order,
+    source_person_id,
+    source_parent_id,
     source_row,
+    source_pages,
+    match_status,
+    match_score,
+    email_source,
+    email_status,
     updated_at
   )
   select
-    public.seed_uuid('person:' || p.id),
+    p.id::uuid,
     p.full_name,
     p.role,
     nullif(lower(p.email), ''),
-    public.seed_uuid('department:' || p.department_id),
-    null,
+    nullif(p.department_id, '')::uuid,
+    nullif(p.manager_id, '')::uuid,
     coalesce(nullif(p.status, ''), 'active'),
     p.department_sort_order,
     coalesce(p.hierarchy_order, 99),
     p.hierarchy_level,
-    p.rule_applied,
+    p.subarea,
+    p.group_name,
+    p.global_order,
+    p.group_order,
+    p.source_person_id,
+    p.source_parent_id,
     p.source_row,
+    p.source_pages,
+    p.match_status,
+    p.match_score,
+    p.email_source,
+    p.email_status,
     coalesce(nullif(p.updated_at, '')::timestamptz, now())
   from jsonb_to_recordset(payload -> 'people') as p(
     id text,
@@ -93,29 +97,42 @@ begin
     department_sort_order integer,
     hierarchy_order integer,
     hierarchy_level text,
-    rule_applied text,
-    source_row text
+    subarea text,
+    group_name text,
+    global_order integer,
+    group_order integer,
+    source_person_id text,
+    source_parent_id text,
+    source_row text,
+    source_pages text,
+    match_status text,
+    match_score numeric,
+    email_source text,
+    email_status text
   )
   on conflict (id) do update set
     full_name = excluded.full_name,
     role = excluded.role,
     email = excluded.email,
     department_id = excluded.department_id,
+    manager_id = excluded.manager_id,
     status = excluded.status,
     department_sort_order = excluded.department_sort_order,
     hierarchy_order = excluded.hierarchy_order,
     hierarchy_level = excluded.hierarchy_level,
-    rule_applied = excluded.rule_applied,
+    subarea = excluded.subarea,
+    group_name = excluded.group_name,
+    global_order = excluded.global_order,
+    group_order = excluded.group_order,
+    source_person_id = excluded.source_person_id,
+    source_parent_id = excluded.source_parent_id,
     source_row = excluded.source_row,
+    source_pages = excluded.source_pages,
+    match_status = excluded.match_status,
+    match_score = excluded.match_score,
+    email_source = excluded.email_source,
+    email_status = excluded.email_status,
     updated_at = excluded.updated_at;
-
-  update public.people as target
-  set manager_id = case
-    when nullif(p.manager_id, '') is null then null
-    else public.seed_uuid('person:' || p.manager_id)
-  end
-  from jsonb_to_recordset(payload -> 'people') as p(id text, manager_id text)
-  where target.id = public.seed_uuid('person:' || p.id);
 
   insert into public.change_history (actor, action, target)
   values (
@@ -125,5 +142,3 @@ begin
     (select count(*) from jsonb_array_elements(payload -> 'departments')) || ' departamentos'
   );
 end $$;
-
-drop function if exists public.seed_uuid(text);

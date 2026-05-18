@@ -34,7 +34,6 @@ import {
   X,
 } from 'lucide-react'
 import clsx from 'clsx'
-import { gsap } from 'gsap'
 import { createSupabaseClient, hasSupabaseConfig } from './lib/supabase'
 import {
   buildChangeSet,
@@ -44,7 +43,7 @@ import {
   summarizeChanges,
 } from './lib/importer'
 import { buildFlowModel, normalizeCatalog } from './lib/orgLayout'
-import demoSeed from './data/ipqSeed.json'
+import demoSeed from './data/epaycoSeed.json'
 
 const supabase = createSupabaseClient()
 const corporateDomain = import.meta.env.VITE_CORPORATE_DOMAIN || 'epayco.com'
@@ -53,10 +52,7 @@ const localDemoMode =
   import.meta.env.DEV &&
   (!hasSupabaseConfig || new URLSearchParams(window.location.search).has('demo'))
 const initialDepartmentId = new URLSearchParams(window.location.search).get('dept')
-
-function prefersReducedMotion() {
-  return typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
-}
+const logoSrc = `${import.meta.env.BASE_URL}epayco-logo.svg`
 
 function normalizeCorporateEmail(value, fallbackName = '') {
   const raw = String(value || fallbackName || '').trim().toLowerCase()
@@ -103,19 +99,17 @@ function CompanyNode({ data }) {
   return (
     <div className="company-node">
       <Handle type="target" position={Position.Top} />
-      <div className="company-node__mark">eP</div>
+      <div className="company-node__mark">
+        <img src={logoSrc} alt="" />
+      </div>
       <div>
         <span>Empresa</span>
         <strong>{data.name}</strong>
-        <small>{data.count} personas / {data.departments} areas</small>
+        <small>{data.count} personas / {data.departments} áreas</small>
       </div>
       <Handle type="source" position={Position.Bottom} />
     </div>
   )
-}
-
-function DepartmentFrameNode({ data }) {
-  return <div className="department-frame-node" style={{ width: data.width, height: data.height }} />
 }
 
 function PersonNode({ data }) {
@@ -141,7 +135,6 @@ function LevelNode({ data }) {
 
 const nodeTypes = {
   company: CompanyNode,
-  departmentFrame: DepartmentFrameNode,
   department: DepartmentNode,
   person: PersonNode,
   level: LevelNode,
@@ -191,41 +184,6 @@ function App() {
   const normalized = useMemo(() => normalizeCatalog(people, departments), [people, departments])
 
   useEffect(() => {
-    if (signedIn || prefersReducedMotion() || !loginPanelRef.current) return
-    const ctx = gsap.context(() => {
-      gsap.fromTo(
-        loginPanelRef.current,
-        { autoAlpha: 0, y: 24, scale: 0.98 },
-        {
-          autoAlpha: 1,
-          y: 0,
-          scale: 1,
-          duration: 0.55,
-          ease: 'power3.out',
-          clearProps: 'opacity,visibility,transform',
-        },
-      )
-    })
-    return () => ctx.revert()
-  }, [signedIn])
-
-  useEffect(() => {
-    if (!signedIn || prefersReducedMotion()) return
-    const targets = [topbarRef.current, sidebarRef.current, workspaceRef.current].filter(Boolean)
-    const ctx = gsap.context(() => {
-      gsap.set(targets, { clearProps: 'opacity,visibility,transform' })
-      gsap.from(targets, {
-        y: 12,
-        duration: 0.46,
-        stagger: 0.06,
-        ease: 'power3.out',
-        clearProps: 'transform',
-      })
-    }, appShellRef.current)
-    return () => ctx.revert()
-  }, [signedIn])
-
-  useEffect(() => {
     if (!supabase) return
 
     supabase.auth.getSession().then(({ data }) => setSession(data.session))
@@ -267,7 +225,7 @@ function App() {
         setBusyMessage('')
       } catch (error) {
         console.error('Supabase load error', error)
-        setBusyMessage('No fue posible conectar con Supabase. Revisa la configuracion del proyecto.')
+        setBusyMessage('No fue posible conectar con Supabase. Revisa la configuración del proyecto.')
       }
     }
 
@@ -397,7 +355,7 @@ function App() {
     setImportState(null)
   }
 
-  const saveManualPerson = (event) => {
+  const saveManualPerson = async (event) => {
     event.preventDefault()
     if (!isAdmin) return
     const person = {
@@ -409,6 +367,18 @@ function App() {
     }
     const exists = people.some((item) => item.id === person.id)
     const nextPeople = exists ? people.map((item) => (item.id === person.id ? person : item)) : [...people, person]
+    if (supabase && session) {
+      setBusyMessage('Guardando cambio manual en Supabase...')
+      const { error } = await supabase.from('people').upsert(toPeoplePayload([person]), { onConflict: 'id' })
+      if (!error) {
+        await supabase.from('change_history').insert({
+          action: exists ? 'Persona editada manualmente' : 'Persona creada manualmente',
+          target: person.full_name,
+          actor: session.user.email,
+        })
+      }
+      setBusyMessage(error ? `No fue posible guardar en Supabase: ${error.message}` : '')
+    }
     persistLocalChange(exists ? 'Persona editada manualmente' : 'Persona creada manualmente', nextPeople, departments, person.full_name)
     setAdminDraft(createEmptyPerson())
   }
@@ -468,15 +438,15 @@ function App() {
           <div className="metric-grid">
             <Metric icon={Users} label="Activas" value={metrics.activePeople} />
             <Metric icon={Clock3} label="Inactivas" value={metrics.inactivePeople} />
-            <Metric icon={Building2} label="Areas" value={metrics.departments} />
+            <Metric icon={Building2} label="Áreas" value={metrics.departments} />
           </div>
 
           <div className="filter-card">
             <div className="section-title">
               <Search size={17} />
-              <span>Busqueda</span>
+              <span>Búsqueda</span>
             </div>
-            <label htmlFor="search">Nombre, cargo, correo o area</label>
+            <label htmlFor="search">Nombre, cargo, correo o área</label>
             <input
               id="search"
               value={query}
@@ -571,7 +541,9 @@ function TopBar({ topbarRef, mode, setMode, demoMode, sessionEmail, signOut, isA
         >
           {sidebarOpen ? <X size={17} /> : <Filter size={17} />}
         </button>
-        <span className="logo-mark">eP</span>
+        <span className="logo-mark">
+          <img src={logoSrc} alt="ePayco" />
+        </span>
         <div>
           <strong>Organigrama ePayco</strong>
           <small>{demoMode ? 'Modo demo local' : sessionEmail}</small>
@@ -585,7 +557,7 @@ function TopBar({ topbarRef, mode, setMode, demoMode, sessionEmail, signOut, isA
         {isAdmin && (
           <button type="button" className={clsx(mode === 'admin' && 'is-active')} onClick={() => setMode('admin')}>
             <PanelRightOpen size={17} />
-            Administracion
+            Administración
           </button>
         )}
       </nav>
@@ -595,7 +567,7 @@ function TopBar({ topbarRef, mode, setMode, demoMode, sessionEmail, signOut, isA
           RLS + Auth
         </span>
         {!demoMode && (
-          <button type="button" className="icon-button" onClick={signOut} aria-label="Cerrar sesion">
+          <button type="button" className="icon-button" onClick={signOut} aria-label="Cerrar sesión">
             <LogOut size={18} />
           </button>
         )}
@@ -628,7 +600,7 @@ function DepartmentList({ departments, people, selectedId, onPick }) {
     <div className="department-list">
       <div className="section-title">
         <Filter size={17} />
-        <span>Areas</span>
+        <span>Áreas</span>
       </div>
       <button type="button" className={clsx(selectedId === 'all' && 'is-active')} onClick={() => onPick('all')}>
         <span>Todos los departamentos</span>
@@ -683,45 +655,10 @@ function OrgCanvas({ flowModel, visiblePeople, selectedDepartmentId }) {
 
   useEffect(() => {
     if (flowModel.nodes.length === 0) return undefined
-    if (!selectedDepartmentId || selectedDepartmentId === 'all') return undefined
-    const timeout = window.setTimeout(focusCanvas, 700)
+    const delay = selectedDepartmentId && selectedDepartmentId !== 'all' ? 380 : 120
+    const timeout = window.setTimeout(focusCanvas, delay)
     return () => window.clearTimeout(timeout)
   }, [flowModel.nodes.length, focusCanvas, selectedDepartmentId, visiblePeople.length])
-
-  useEffect(() => {
-    if (prefersReducedMotion() || !canvasRef.current) return
-    let ctx
-    const timeout = window.setTimeout(() => {
-      ctx = gsap.context(() => {
-        gsap.fromTo(
-          '.company-node, .department-node, .person-node, .level-node',
-          { y: 14, scale: 0.96 },
-          {
-            y: 0,
-            scale: 1,
-            duration: 0.38,
-            stagger: 0.018,
-            ease: 'power2.out',
-            clearProps: 'transform',
-          },
-        )
-        gsap.fromTo(
-          '.react-flow__node-departmentFrame',
-          { scale: 0.985 },
-          { scale: 1, duration: 0.28, ease: 'power2.out', clearProps: 'transform' },
-        )
-        gsap.fromTo(
-          '.canvas-toolbar',
-          { y: -8 },
-          { y: 0, duration: 0.34, ease: 'power2.out', clearProps: 'transform' },
-        )
-        }, canvasRef.current)
-    }, 60)
-    return () => {
-      window.clearTimeout(timeout)
-      ctx?.revert()
-    }
-  }, [flowModel.nodes.length, selectedDepartmentId])
 
   return (
     <section ref={canvasRef} className="canvas-panel" aria-label="Canvas del organigrama">
@@ -747,6 +684,8 @@ function OrgCanvas({ flowModel, visiblePeople, selectedDepartmentId }) {
         defaultViewport={{ x: 100, y: 145, zoom: 0.54 }}
         nodesDraggable={false}
         nodesConnectable={false}
+        elementsSelectable={false}
+        selectNodesOnDrag={false}
         proOptions={{ hideAttribution: true }}
       >
         <Background color="#cbd5e1" gap={22} size={1} />
@@ -760,7 +699,7 @@ function OrgCanvas({ flowModel, visiblePeople, selectedDepartmentId }) {
         <div className="canvas-empty">
           <Building2 size={28} />
           <strong>No hay datos para mostrar</strong>
-          <span>La sesion esta activa, pero Supabase no devolvio departamentos ni personas.</span>
+          <span>La sesión está activa, pero Supabase no devolvió departamentos ni personas.</span>
         </div>
       )}
     </section>
@@ -797,21 +736,35 @@ function PersonDrawer({ person, people, onClose, onEdit, canEdit }) {
         <div>
           <dt>Estado</dt>
           <dd>
-            <span className={clsx('status-dot', person.status)}>{person.status}</span>
+            <span className={clsx('status-dot', person.status)}>
+              {person.status === 'active' ? 'Activo' : 'Inactivo'}
+            </span>
           </dd>
         </div>
         <div>
-          <dt>Nivel jerarquico</dt>
+          <dt>Nivel jerárquico</dt>
           <dd>{person.hierarchy_level || 'Sin nivel'}</dd>
         </div>
+        {person.subarea && (
+          <div>
+            <dt>Subárea</dt>
+            <dd>{person.subarea}</dd>
+          </div>
+        )}
+        {person.group_name && person.group_name !== person.subarea && (
+          <div>
+            <dt>Grupo</dt>
+            <dd>{person.group_name}</dd>
+          </div>
+        )}
         <div>
-          <dt>Ultima actualizacion</dt>
+          <dt>Última actualización</dt>
           <dd>{formatDate(person.updated_at)}</dd>
         </div>
       </dl>
       {canEdit && (
         <button type="button" className="primary-action" onClick={() => onEdit(person)}>
-          Editar en administracion
+          Editar en administración
         </button>
       )}
     </aside>
@@ -843,7 +796,7 @@ function AdminPanel({
         </button>
         <button className={clsx(activeTab === 'manual' && 'is-active')} onClick={() => setActiveTab('manual')}>
           <Plus size={17} />
-          Edicion manual
+          Edición manual
         </button>
         <button className={clsx(activeTab === 'history' && 'is-active')} onClick={() => setActiveTab('history')}>
           <History size={17} />
@@ -857,8 +810,8 @@ function AdminPanel({
             <FileSpreadsheet size={34} />
             <h2>Cargar Excel o CSV</h2>
             <p>
-              Columnas aceptadas: nombre, cargo, correo, departamento, jefe directo, estado. Tambien reconoce la base
-              actual con nombre mostrado, nombre departamento y nombre posicion.
+              Columnas aceptadas: nombre, cargo, correo, departamento, jefe directo, estado. También reconoce la base
+              maestra con departamento PDF, subárea, grupo y orden jerárquico.
             </p>
             <label className="file-input">
               <input
@@ -920,8 +873,8 @@ function ImportSummary({ importState, onConfirm, onCancel }) {
     return (
       <div className="summary-empty">
         <ShieldCheck size={28} />
-        <h2>Validacion previa obligatoria</h2>
-        <p>Antes de modificar datos, el sistema mostrara nuevos registros, actualizaciones, bajas, duplicados y errores.</p>
+        <h2>Validación previa obligatoria</h2>
+        <p>Antes de modificar datos, el sistema mostrará nuevos registros, actualizaciones, bajas, duplicados y errores.</p>
       </div>
     )
   }
@@ -1004,6 +957,10 @@ function ManualPersonForm({ departments, people, draft, setDraft, onSave }) {
             </option>
           ))}
       </select>
+      <label htmlFor="subarea">Subárea</label>
+      <input id="subarea" value={draft.subarea || ''} onChange={(event) => update('subarea', event.target.value)} />
+      <label htmlFor="group-name">Grupo</label>
+      <input id="group-name" value={draft.group_name || ''} onChange={(event) => update('group_name', event.target.value)} />
       <label htmlFor="person-status">Estado</label>
       <select id="person-status" value={draft.status} onChange={(event) => update('status', event.target.value)}>
         <option value="active">Activo</option>
@@ -1021,8 +978,13 @@ function applyImport(rows, currentPeople, currentDepartments) {
   const departmentMap = new Map(currentDepartments.map((department) => [department.name.toLowerCase(), department]))
   const nextDepartments = [...currentDepartments]
   const importedKeys = new Set()
+  const importedDepartmentKeys = new Set()
   const peopleByEmail = new Map(currentPeople.filter((person) => person.email).map((person) => [person.email.toLowerCase(), person]))
   const peopleByName = new Map(currentPeople.map((person) => [person.full_name.toLowerCase(), person]))
+  const peopleBySourceId = new Map(
+    currentPeople.filter((person) => person.source_person_id).map((person) => [person.source_person_id, person]),
+  )
+  const rowsByPersonId = new Map()
 
   const nextPeople = rows.reduce((acc, row) => {
     let department = departmentMap.get(row.department_name.toLowerCase())
@@ -1038,10 +1000,16 @@ function applyImport(rows, currentPeople, currentDepartments) {
       nextDepartments.push(department)
     }
 
-    const key = (row.email || row.full_name).toLowerCase()
+    importedDepartmentKeys.add(department.name.toLowerCase())
+    const key = (row.source_person_id || row.email || row.full_name).toLowerCase()
     importedKeys.add(key)
+    if (row.source_person_id) importedKeys.add(row.source_person_id.toLowerCase())
+    if (row.email) importedKeys.add(row.email.toLowerCase())
     if (row.full_name) importedKeys.add(row.full_name.toLowerCase())
-    const existing = (row.email && peopleByEmail.get(row.email.toLowerCase())) || peopleByName.get(row.full_name.toLowerCase())
+    const existing =
+      (row.source_person_id && peopleBySourceId.get(row.source_person_id)) ||
+      (row.email && peopleByEmail.get(row.email.toLowerCase())) ||
+      peopleByName.get(row.full_name.toLowerCase())
     const updated = {
       ...(existing || {}),
       id: existing?.id || crypto.randomUUID(),
@@ -1049,34 +1017,109 @@ function applyImport(rows, currentPeople, currentDepartments) {
       role: row.role,
       email: row.email,
       department_id: department.id,
-      manager_id: null,
+      manager_id: existing?.manager_id || null,
       status: row.status || 'active',
       department_sort_order: row.department_sort_order || department.sort_order || 999,
       hierarchy_order: row.hierarchy_order || 99,
       hierarchy_level: row.hierarchy_level || 'Sin nivel',
+      subarea: row.subarea || '',
+      group_name: row.group_name || '',
+      global_order: row.global_order || row.sourceRow || 999,
+      group_order: row.group_order || row.global_order || row.sourceRow || 999,
+      source_person_id: row.source_person_id || existing?.source_person_id || '',
+      source_parent_id: row.source_parent_id || null,
+      source_row: String(row.sourceRow || ''),
+      source_pages: row.source_pages || '',
+      match_status: row.match_status || '',
+      match_score: row.match_score ?? null,
+      email_source: row.email_source || '',
+      email_status: row.email_status || '',
       updated_at: now,
     }
+    rowsByPersonId.set(updated.id, row)
     if (existing) return acc.map((person) => (person.id === existing.id ? updated : person))
     return [...acc, updated]
   }, currentPeople)
 
-  const inactivePeople = nextPeople.map((person) => {
-    const key = (person.email || person.full_name).toLowerCase()
-    const nameKey = person.full_name.toLowerCase()
-    return importedKeys.has(key) || importedKeys.has(nameKey) ? person : { ...person, status: 'inactive', updated_at: now }
+  const sourceToPerson = new Map(nextPeople.filter((person) => person.source_person_id).map((person) => [person.source_person_id, person]))
+  const nameToPerson = new Map(nextPeople.map((person) => [person.full_name.toLowerCase(), person]))
+
+  const resolvedPeople = nextPeople.map((person) => {
+    const row = rowsByPersonId.get(person.id)
+    if (!row) return person
+    const manager =
+      (row.source_parent_id && sourceToPerson.get(row.source_parent_id)) ||
+      (row.manager_name && nameToPerson.get(row.manager_name.toLowerCase())) ||
+      null
+    return { ...person, manager_id: manager?.id || null }
   })
 
-  return { nextPeople: inactivePeople, nextDepartments }
+  const inactivePeople = resolvedPeople.map((person) => {
+    const sourceKey = person.source_person_id?.toLowerCase()
+    const key = (person.email || person.full_name).toLowerCase()
+    const nameKey = person.full_name.toLowerCase()
+    return (sourceKey && importedKeys.has(sourceKey)) || importedKeys.has(key) || importedKeys.has(nameKey)
+      ? person
+      : { ...person, status: 'inactive', updated_at: now }
+  })
+
+  const resolvedDepartments = nextDepartments.map((department) => {
+    if (!importedDepartmentKeys.size) return department
+    return importedDepartmentKeys.has(department.name.toLowerCase())
+      ? { ...department, status: 'active' }
+      : { ...department, status: 'inactive' }
+  })
+
+  return { nextPeople: inactivePeople, nextDepartments: resolvedDepartments }
 }
 
 async function upsertImportToSupabase(rows, people, departments, actor) {
-  await supabase.from('departments').upsert(departments, { onConflict: 'id' })
-  await supabase.from('people').upsert(people, { onConflict: 'id' })
+  await supabase.from('departments').upsert(toDepartmentPayload(departments), { onConflict: 'id' })
+  await supabase.from('people').upsert(toPeoplePayload(people), { onConflict: 'id' })
   await supabase.from('change_history').insert({
     action: 'Carga masiva confirmada',
     target: `${rows.length} filas importadas`,
     actor,
   })
+}
+
+function toDepartmentPayload(departments) {
+  return departments.map(({ id, name, parent_id, sort_order, status }) => ({
+    id,
+    name,
+    parent_id: parent_id || null,
+    sort_order: sort_order || 0,
+    status: status || 'active',
+    updated_at: new Date().toISOString(),
+  }))
+}
+
+function toPeoplePayload(people) {
+  return people.map((person) => ({
+    id: person.id,
+    full_name: person.full_name,
+    role: person.role,
+    email: normalizeCorporateEmail(person.email, person.full_name),
+    department_id: person.department_id || null,
+    manager_id: person.manager_id || null,
+    status: person.status || 'active',
+    department_sort_order: person.department_sort_order || null,
+    hierarchy_order: person.hierarchy_order || 99,
+    hierarchy_level: person.hierarchy_level || null,
+    subarea: person.subarea || null,
+    group_name: person.group_name || null,
+    global_order: person.global_order || null,
+    group_order: person.group_order || null,
+    source_person_id: person.source_person_id || null,
+    source_parent_id: person.source_parent_id || null,
+    source_row: person.source_row || null,
+    source_pages: person.source_pages || null,
+    match_status: person.match_status || null,
+    match_score: person.match_score ?? null,
+    email_source: person.email_source || null,
+    email_status: person.email_status || null,
+    updated_at: person.updated_at || new Date().toISOString(),
+  }))
 }
 
 function formatDate(value) {
