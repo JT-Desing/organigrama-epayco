@@ -34,7 +34,13 @@ import {
   X,
 } from 'lucide-react'
 import clsx from 'clsx'
-import { createSupabaseClient, hasSupabaseConfig } from './lib/supabase'
+import {
+  checkSupabaseReachability,
+  createSupabaseClient,
+  formatSupabaseError,
+  hasSupabaseConfig,
+  supabaseConfigIssue,
+} from './lib/supabase'
 import {
   buildChangeSet,
   createEmptyPerson,
@@ -53,6 +59,7 @@ const localDemoMode =
   (!hasSupabaseConfig || new URLSearchParams(window.location.search).has('demo'))
 const initialDepartmentId = new URLSearchParams(window.location.search).get('dept')
 const logoSrc = `${import.meta.env.BASE_URL}epayco-logo.svg`
+const initialAuthNotice = getInitialAuthNotice()
 
 function normalizeCorporateEmail(value, fallbackName = '') {
   const raw = String(value || fallbackName || '').trim().toLowerCase()
@@ -112,6 +119,13 @@ function CompanyNode({ data }) {
   )
 }
 
+function getInitialAuthNotice() {
+  if (typeof window === 'undefined') return ''
+  const hashParams = new URLSearchParams(window.location.hash.slice(1))
+  const authError = hashParams.get('error_description') || hashParams.get('error')
+  return authError ? formatSupabaseError(authError) : ''
+}
+
 function PersonNode({ data }) {
   return (
     <button className="person-node" type="button" onClick={data.onOpen}>
@@ -143,7 +157,7 @@ const nodeTypes = {
 function App() {
   const [session, setSession] = useState(null)
   const [authEmail, setAuthEmail] = useState('')
-  const [authNotice, setAuthNotice] = useState('')
+  const [authNotice, setAuthNotice] = useState(initialAuthNotice)
   const [authLoading, setAuthLoading] = useState(false)
   const [mode, setMode] = useState('org')
   const [people, setPeople] = useState(() => (localDemoMode ? demoSeed.people : []))
@@ -194,11 +208,27 @@ function App() {
   useEffect(() => {
     if (!supabase) return
 
-    supabase.auth.getSession().then(({ data }) => setSession(data.session))
+    supabase.auth
+      .getSession()
+      .then(({ data, error }) => {
+        if (error) {
+          setAuthNotice(formatSupabaseError(error, 'No fue posible validar la sesion de Supabase.'))
+          return
+        }
+        setSession(data.session)
+      })
+      .catch((error) => setAuthNotice(formatSupabaseError(error, 'No fue posible validar la sesion de Supabase.')))
+
     const { data: listener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
       setSession(nextSession)
     })
     return () => listener.subscription.unsubscribe()
+  }, [])
+
+  useEffect(() => {
+    if (!initialAuthNotice) return
+
+    window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}`)
   }, [])
 
   const isAdmin = useMemo(() => {
@@ -214,26 +244,30 @@ function App() {
     const loadPrivateData = async () => {
       setBusyMessage('Sincronizando datos privados desde Supabase...')
       try {
-        const [{ data: dbDepartments, error: deptError }, { data: dbPeople, error: peopleError }, { data: auditRows }] =
-          await Promise.all([
-            supabase.from('departments').select('*').order('sort_order'),
-            supabase.from('people').select('*').order('full_name'),
-            supabase.from('change_history').select('*').order('created_at', { ascending: false }).limit(50),
-          ])
+        const [
+          { data: dbDepartments, error: deptError },
+          { data: dbPeople, error: peopleError },
+          { data: auditRows, error: auditError },
+        ] = await Promise.all([
+          supabase.from('departments').select('*').order('sort_order'),
+          supabase.from('people').select('*').order('full_name'),
+          supabase.from('change_history').select('*').order('created_at', { ascending: false }).limit(50),
+        ])
 
         if (deptError || peopleError) {
           console.error('Supabase load error', deptError || peopleError)
-          setBusyMessage('No fue posible cargar la base desde Supabase. Revisa permisos RLS y datos publicados.')
+          setBusyMessage(formatSupabaseError(deptError || peopleError, 'No fue posible cargar la base desde Supabase.'))
           return
         }
 
         setDepartments(dbDepartments || [])
         setPeople(dbPeople || [])
+        if (auditError) console.warn('Supabase history load error', auditError)
         setHistory(auditRows || [])
         setBusyMessage('')
       } catch (error) {
         console.error('Supabase load error', error)
-        setBusyMessage('No fue posible conectar con Supabase. Revisa la configuración del proyecto.')
+        setBusyMessage(formatSupabaseError(error, 'No fue posible conectar con Supabase.'))
       }
     }
 
@@ -306,17 +340,28 @@ function App() {
       setAuthNotice(`Solo se permite ingreso con correos @${corporateDomain}.`)
       return
     }
-    if (!supabase) {
-      setAuthNotice('Configura VITE_SUPABASE_URL y VITE_SUPABASE_ANON_KEY para habilitar el acceso privado.')
+    if (!supabase || supabaseConfigIssue) {
+      setAuthNotice(supabaseConfigIssue)
       return
     }
     setAuthLoading(true)
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: { emailRedirectTo: window.location.href.split(/[?#]/)[0] },
-    })
-    setAuthLoading(false)
-    setAuthNotice(error ? error.message : 'Revisa tu correo para ingresar con magic link.')
+    try {
+      const reachability = await checkSupabaseReachability()
+      if (!reachability.ok) {
+        setAuthNotice(reachability.message)
+        return
+      }
+
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: { emailRedirectTo: window.location.href.split(/[?#]/)[0] },
+      })
+      setAuthNotice(error ? formatSupabaseError(error) : 'Revisa tu correo para ingresar con magic link.')
+    } catch (error) {
+      setAuthNotice(formatSupabaseError(error))
+    } finally {
+      setAuthLoading(false)
+    }
   }
 
   const signOut = async () => {
@@ -354,9 +399,15 @@ function App() {
     const { nextPeople, nextDepartments } = applyImport(importState.rows, normalized.people, normalized.departments)
 
     if (supabase && session) {
-      setBusyMessage('Aplicando cambios en Supabase...')
-      await upsertImportToSupabase(importState.rows, nextPeople, nextDepartments, session.user.email)
-      setBusyMessage('')
+      try {
+        setBusyMessage('Aplicando cambios en Supabase...')
+        await upsertImportToSupabase(importState.rows, nextPeople, nextDepartments, session.user.email)
+        setBusyMessage('')
+      } catch (error) {
+        console.error('Supabase import error', error)
+        setBusyMessage(formatSupabaseError(error, 'No fue posible aplicar la carga en Supabase.'))
+        return
+      }
     }
 
     persistLocalChange('Carga masiva confirmada', nextPeople, nextDepartments, importState.fileName)
@@ -376,16 +427,23 @@ function App() {
     const exists = people.some((item) => item.id === person.id)
     const nextPeople = exists ? people.map((item) => (item.id === person.id ? person : item)) : [...people, person]
     if (supabase && session) {
-      setBusyMessage('Guardando cambio manual en Supabase...')
-      const { error } = await supabase.from('people').upsert(toPeoplePayload([person]), { onConflict: 'id' })
-      if (!error) {
-        await supabase.from('change_history').insert({
+      try {
+        setBusyMessage('Guardando cambio manual en Supabase...')
+        const { error } = await supabase.from('people').upsert(toPeoplePayload([person]), { onConflict: 'id' })
+        if (error) throw error
+
+        const { error: historyError } = await supabase.from('change_history').insert({
           action: exists ? 'Persona editada manualmente' : 'Persona creada manualmente',
           target: person.full_name,
           actor: session.user.email,
         })
+        if (historyError) throw historyError
+        setBusyMessage('')
+      } catch (error) {
+        console.error('Supabase manual save error', error)
+        setBusyMessage(formatSupabaseError(error, 'No fue posible guardar el cambio en Supabase.'))
+        return
       }
-      setBusyMessage(error ? `No fue posible guardar en Supabase: ${error.message}` : '')
     }
     persistLocalChange(exists ? 'Persona editada manualmente' : 'Persona creada manualmente', nextPeople, departments, person.full_name)
     setAdminDraft(createEmptyPerson())
@@ -1082,13 +1140,20 @@ function applyImport(rows, currentPeople, currentDepartments) {
 }
 
 async function upsertImportToSupabase(rows, people, departments, actor) {
-  await supabase.from('departments').upsert(toDepartmentPayload(departments), { onConflict: 'id' })
-  await supabase.from('people').upsert(toPeoplePayload(people), { onConflict: 'id' })
-  await supabase.from('change_history').insert({
+  const { error: departmentsError } = await supabase
+    .from('departments')
+    .upsert(toDepartmentPayload(departments), { onConflict: 'id' })
+  if (departmentsError) throw departmentsError
+
+  const { error: peopleError } = await supabase.from('people').upsert(toPeoplePayload(people), { onConflict: 'id' })
+  if (peopleError) throw peopleError
+
+  const { error: historyError } = await supabase.from('change_history').insert({
     action: 'Carga masiva confirmada',
     target: `${rows.length} filas importadas`,
     actor,
   })
+  if (historyError) throw historyError
 }
 
 function toDepartmentPayload(departments) {

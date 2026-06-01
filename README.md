@@ -37,6 +37,14 @@ URLs recomendadas de Auth:
 - Local: `http://localhost:5173/`
 - Local alterna: `http://127.0.0.1:5173/`
 
+Para validar que la URL y la llave apuntan a un proyecto activo:
+
+```bash
+npm run check:supabase
+```
+
+Si el comando falla en DNS, `VITE_SUPABASE_URL` no apunta a un proyecto Supabase activo o el proyecto esta pausado/eliminado. Copia nuevamente la URL desde Supabase > Project Settings > API y actualiza `.env.local` y el secreto `VITE_SUPABASE_URL` en GitHub.
+
 ## GitHub Pages
 
 El workflow `.github/workflows/deploy-pages.yml` despliega `dist` con GitHub Actions. Configura estos secretos del repositorio antes de usar Pages con Supabase real:

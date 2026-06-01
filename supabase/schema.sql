@@ -71,6 +71,13 @@ alter table public.people enable row level security;
 alter table public.authorized_users enable row level security;
 alter table public.change_history enable row level security;
 
+-- Supabase projects created after April 2026 may not expose new tables to the
+-- Data API automatically. These grants expose the tables to authenticated users;
+-- RLS policies below still decide which rows and writes are allowed.
+grant usage on schema public to authenticated;
+grant select on public.departments, public.people, public.authorized_users, public.change_history to authenticated;
+grant insert, update, delete on public.departments, public.people, public.authorized_users, public.change_history to authenticated;
+
 create schema if not exists private;
 
 create or replace function private.current_user_email()
