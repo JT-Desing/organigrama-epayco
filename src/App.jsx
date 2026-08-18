@@ -21,9 +21,6 @@ import {
   Filter,
   History,
   LayoutDashboard,
-  Lock,
-  LogOut,
-  Mail,
   PanelRightOpen,
   Plus,
   Search,
@@ -34,13 +31,7 @@ import {
   X,
 } from 'lucide-react'
 import clsx from 'clsx'
-import {
-  checkSupabaseReachability,
-  createSupabaseClient,
-  formatSupabaseError,
-  hasSupabaseConfig,
-  supabaseConfigIssue,
-} from './lib/supabase'
+import { createSupabaseClient } from './lib/supabase'
 import {
   buildChangeSet,
   createEmptyPerson,
@@ -53,13 +44,9 @@ import demoSeed from './data/epaycoSeed.json'
 
 const supabase = createSupabaseClient()
 const corporateDomain = import.meta.env.VITE_CORPORATE_DOMAIN || 'epayco.com'
-const adminEmail = (import.meta.env.VITE_ADMIN_EMAIL || 'julian.tobon@epayco.com').toLowerCase()
-const localDemoMode =
-  import.meta.env.DEV &&
-  (!hasSupabaseConfig || new URLSearchParams(window.location.search).has('demo'))
+const publicAdminMode = import.meta.env.DEV || import.meta.env.VITE_ENABLE_PUBLIC_ADMIN === 'true'
 const initialDepartmentId = new URLSearchParams(window.location.search).get('dept')
 const logoSrc = `${import.meta.env.BASE_URL}epayco-logo.svg`
-const initialAuthNotice = getInitialAuthNotice()
 
 function normalizeCorporateEmail(value, fallbackName = '') {
   const raw = String(value || fallbackName || '').trim().toLowerCase()
@@ -119,13 +106,6 @@ function CompanyNode({ data }) {
   )
 }
 
-function getInitialAuthNotice() {
-  if (typeof window === 'undefined') return ''
-  const hashParams = new URLSearchParams(window.location.hash.slice(1))
-  const authError = hashParams.get('error_description') || hashParams.get('error')
-  return authError ? formatSupabaseError(authError) : ''
-}
-
 function PersonNode({ data }) {
   return (
     <button className="person-node" type="button" onClick={data.onOpen}>
@@ -155,25 +135,19 @@ const nodeTypes = {
 }
 
 function App() {
-  const [session, setSession] = useState(null)
-  const [authEmail, setAuthEmail] = useState('')
-  const [authNotice, setAuthNotice] = useState(initialAuthNotice)
-  const [authLoading, setAuthLoading] = useState(false)
   const [mode, setMode] = useState('org')
-  const [people, setPeople] = useState(() => (localDemoMode ? demoSeed.people : []))
-  const [departments, setDepartments] = useState(() => (localDemoMode ? demoSeed.departments : []))
+  const [people, setPeople] = useState(() => demoSeed.people)
+  const [departments, setDepartments] = useState(() => demoSeed.departments)
   const [history, setHistory] = useState(() =>
-    localDemoMode
-      ? [
-          {
-            id: 'hist-demo',
-            action: 'Carga inicial demo',
-            actor: 'sistema',
-            target: `${demoSeed.people.length} personas / ${demoSeed.departments.length} departamentos`,
-            created_at: new Date().toISOString(),
-          },
-        ]
-      : [],
+    [
+      {
+        id: 'hist-demo',
+        action: 'Carga inicial local',
+        actor: 'sistema',
+        target: `${demoSeed.people.length} personas / ${demoSeed.departments.length} departamentos`,
+        created_at: new Date().toISOString(),
+      },
+    ],
   )
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [selectedPerson, setSelectedPerson] = useState(null)
@@ -187,14 +161,12 @@ function App() {
   const [adminDraft, setAdminDraft] = useState(createEmptyPerson())
   const [importState, setImportState] = useState(null)
   const [busyMessage, setBusyMessage] = useState('')
-  const loginPanelRef = useRef(null)
   const appShellRef = useRef(null)
   const topbarRef = useRef(null)
   const sidebarRef = useRef(null)
   const workspaceRef = useRef(null)
 
-  const demoMode = localDemoMode
-  const signedIn = demoMode || Boolean(session)
+  const dataSourceLabel = supabase ? 'Acceso sin login / Supabase opcional' : 'Acceso sin login / base local'
   const normalized = useMemo(() => normalizeCatalog(people, departments), [people, departments])
   const activeDepartments = useMemo(
     () => normalized.departments.filter((department) => department.status !== 'inactive'),
@@ -208,71 +180,35 @@ function App() {
   useEffect(() => {
     if (!supabase) return
 
-    supabase.auth
-      .getSession()
-      .then(({ data, error }) => {
-        if (error) {
-          setAuthNotice(formatSupabaseError(error, 'No fue posible validar la sesion de Supabase.'))
-          return
-        }
-        setSession(data.session)
-      })
-      .catch((error) => setAuthNotice(formatSupabaseError(error, 'No fue posible validar la sesion de Supabase.')))
-
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-      setSession(nextSession)
-    })
-    return () => listener.subscription.unsubscribe()
-  }, [])
-
-  useEffect(() => {
-    if (!initialAuthNotice) return
-
-    window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}`)
-  }, [])
-
-  const isAdmin = useMemo(() => {
-    const email = session?.user?.email?.toLowerCase() || ''
-    return demoMode || email === adminEmail
-  }, [demoMode, session])
-  const effectiveMode = isAdmin ? mode : 'org'
-
-
-  useEffect(() => {
-    if (!supabase || !session) return
-
-    const loadPrivateData = async () => {
-      setBusyMessage('Sincronizando datos privados desde Supabase...')
+    let cancelled = false
+    const loadPublicData = async () => {
       try {
         const [
           { data: dbDepartments, error: deptError },
           { data: dbPeople, error: peopleError },
-          { data: auditRows, error: auditError },
         ] = await Promise.all([
           supabase.from('departments').select('*').order('sort_order'),
           supabase.from('people').select('*').order('full_name'),
-          supabase.from('change_history').select('*').order('created_at', { ascending: false }).limit(50),
         ])
 
-        if (deptError || peopleError) {
-          console.error('Supabase load error', deptError || peopleError)
-          setBusyMessage(formatSupabaseError(deptError || peopleError, 'No fue posible cargar la base desde Supabase.'))
-          return
-        }
+        if (deptError || peopleError) throw deptError || peopleError
+        if (cancelled || !dbDepartments?.length || !dbPeople?.length) return
 
-        setDepartments(dbDepartments || [])
-        setPeople(dbPeople || [])
-        if (auditError) console.warn('Supabase history load error', auditError)
-        setHistory(auditRows || [])
-        setBusyMessage('')
+        setDepartments(dbDepartments)
+        setPeople(dbPeople)
       } catch (error) {
-        console.error('Supabase load error', error)
-        setBusyMessage(formatSupabaseError(error, 'No fue posible conectar con Supabase.'))
+        void error
       }
     }
 
-    loadPrivateData()
-  }, [session])
+    loadPublicData()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const isAdmin = publicAdminMode
+  const effectiveMode = isAdmin ? mode : 'org'
 
   const visiblePeople = useMemo(() => {
     const text = deferredQuery.trim().toLowerCase()
@@ -297,9 +233,8 @@ function App() {
       activePeople: catalogPeople.filter((person) => person.status === 'active').length,
       inactivePeople: catalogPeople.filter((person) => person.status === 'inactive').length,
       departments: activeDepartments.length,
-      admins: demoMode ? 'demo' : session?.user?.email,
     }),
-    [activeDepartments.length, catalogPeople, demoMode, session],
+    [activeDepartments.length, catalogPeople],
   )
 
   const selectDepartment = useCallback((id) => {
@@ -332,43 +267,6 @@ function App() {
     [activeDepartments, effectiveExpandedDepartmentIds, toggleDepartment, visiblePeople],
   )
 
-  const signIn = async (event) => {
-    event.preventDefault()
-    setAuthNotice('')
-    const email = authEmail.trim().toLowerCase()
-    if (!email.endsWith(`@${corporateDomain}`)) {
-      setAuthNotice(`Solo se permite ingreso con correos @${corporateDomain}.`)
-      return
-    }
-    if (!supabase || supabaseConfigIssue) {
-      setAuthNotice(supabaseConfigIssue)
-      return
-    }
-    setAuthLoading(true)
-    try {
-      const reachability = await checkSupabaseReachability()
-      if (!reachability.ok) {
-        setAuthNotice(reachability.message)
-        return
-      }
-
-      const { error } = await supabase.auth.signInWithOtp({
-        email,
-        options: { emailRedirectTo: window.location.href.split(/[?#]/)[0] },
-      })
-      setAuthNotice(error ? formatSupabaseError(error) : 'Revisa tu correo para ingresar con magic link.')
-    } catch (error) {
-      setAuthNotice(formatSupabaseError(error))
-    } finally {
-      setAuthLoading(false)
-    }
-  }
-
-  const signOut = async () => {
-    if (supabase) await supabase.auth.signOut()
-    setSession(null)
-  }
-
   const persistLocalChange = (action, nextPeople, nextDepartments, target) => {
     setPeople(nextPeople)
     setDepartments(nextDepartments)
@@ -376,7 +274,7 @@ function App() {
       {
         id: crypto.randomUUID(),
         action,
-        actor: session?.user?.email || 'admin.demo@epayco.com',
+        actor: 'admin.local@epayco.com',
         target,
         created_at: new Date().toISOString(),
       },
@@ -398,18 +296,6 @@ function App() {
     if (!importState) return
     const { nextPeople, nextDepartments } = applyImport(importState.rows, normalized.people, normalized.departments)
 
-    if (supabase && session) {
-      try {
-        setBusyMessage('Aplicando cambios en Supabase...')
-        await upsertImportToSupabase(importState.rows, nextPeople, nextDepartments, session.user.email)
-        setBusyMessage('')
-      } catch (error) {
-        console.error('Supabase import error', error)
-        setBusyMessage(formatSupabaseError(error, 'No fue posible aplicar la carga en Supabase.'))
-        return
-      }
-    }
-
     persistLocalChange('Carga masiva confirmada', nextPeople, nextDepartments, importState.fileName)
     setImportState(null)
   }
@@ -426,64 +312,8 @@ function App() {
     }
     const exists = people.some((item) => item.id === person.id)
     const nextPeople = exists ? people.map((item) => (item.id === person.id ? person : item)) : [...people, person]
-    if (supabase && session) {
-      try {
-        setBusyMessage('Guardando cambio manual en Supabase...')
-        const { error } = await supabase.from('people').upsert(toPeoplePayload([person]), { onConflict: 'id' })
-        if (error) throw error
-
-        const { error: historyError } = await supabase.from('change_history').insert({
-          action: exists ? 'Persona editada manualmente' : 'Persona creada manualmente',
-          target: person.full_name,
-          actor: session.user.email,
-        })
-        if (historyError) throw historyError
-        setBusyMessage('')
-      } catch (error) {
-        console.error('Supabase manual save error', error)
-        setBusyMessage(formatSupabaseError(error, 'No fue posible guardar el cambio en Supabase.'))
-        return
-      }
-    }
     persistLocalChange(exists ? 'Persona editada manualmente' : 'Persona creada manualmente', nextPeople, departments, person.full_name)
     setAdminDraft(createEmptyPerson())
-  }
-
-  if (!signedIn) {
-    return (
-      <main className="login-shell">
-        <section ref={loginPanelRef} className="login-panel" aria-labelledby="login-title">
-          <div className="brand-lock">
-            <ShieldCheck size={28} />
-          </div>
-          <p className="eyebrow">Organigrama privado ePayco</p>
-          <h1 id="login-title">Ingreso seguro sin contraseñas manuales</h1>
-          <p className="login-copy">
-            Accede con magic link usando tu correo corporativo autorizado. Los datos se consultan desde Supabase
-            únicamente después de autenticar la sesión.
-          </p>
-          <form onSubmit={signIn} className="login-form">
-            <label htmlFor="email">Correo corporativo</label>
-            <div className="field-with-icon">
-              <Mail size={18} />
-              <input
-                id="email"
-                type="email"
-                value={authEmail}
-                onChange={(event) => setAuthEmail(event.target.value)}
-                placeholder={`usuario@${corporateDomain}`}
-                required
-              />
-            </div>
-            <button type="submit" disabled={authLoading}>
-              <Lock size={18} />
-              {authLoading ? 'Enviando...' : 'Enviar magic link'}
-            </button>
-            {authNotice && <p className="form-notice">{authNotice}</p>}
-          </form>
-        </section>
-      </main>
-    )
   }
 
   return (
@@ -493,9 +323,7 @@ function App() {
           topbarRef={topbarRef}
           mode={effectiveMode}
           setMode={setMode}
-          demoMode={demoMode}
-          sessionEmail={session?.user?.email}
-          signOut={signOut}
+          dataSourceLabel={dataSourceLabel}
           isAdmin={isAdmin}
           sidebarOpen={sidebarOpen}
           onToggleSidebar={() => setSidebarOpen((open) => !open)}
@@ -595,7 +423,7 @@ function App() {
   )
 }
 
-function TopBar({ topbarRef, mode, setMode, demoMode, sessionEmail, signOut, isAdmin, sidebarOpen, onToggleSidebar }) {
+function TopBar({ topbarRef, mode, setMode, dataSourceLabel, isAdmin, sidebarOpen, onToggleSidebar }) {
   return (
     <header ref={topbarRef} className="topbar">
       <div className="topbar__brand">
@@ -612,7 +440,7 @@ function TopBar({ topbarRef, mode, setMode, demoMode, sessionEmail, signOut, isA
         </span>
         <div>
           <strong>Organigrama ePayco</strong>
-          <small>{demoMode ? 'Modo demo local' : sessionEmail}</small>
+          <small>{dataSourceLabel}</small>
         </div>
       </div>
       <nav className="topbar__nav" aria-label="Vista principal">
@@ -630,13 +458,8 @@ function TopBar({ topbarRef, mode, setMode, demoMode, sessionEmail, signOut, isA
       <div className="topbar__actions">
         <span className="privacy-pill">
           <ShieldCheck size={15} />
-          RLS + Auth
+          Sin login
         </span>
-        {!demoMode && (
-          <button type="button" className="icon-button" onClick={signOut} aria-label="Cerrar sesión">
-            <LogOut size={18} />
-          </button>
-        )}
       </div>
     </header>
   )
@@ -765,7 +588,7 @@ function OrgCanvas({ flowModel, visiblePeople, selectedDepartmentId }) {
         <div className="canvas-empty">
           <Building2 size={28} />
           <strong>No hay datos para mostrar</strong>
-          <span>La sesión está activa, pero Supabase no devolvió departamentos ni personas.</span>
+          <span>No hay datos disponibles en la base local ni en Supabase.</span>
         </div>
       )}
     </section>
@@ -1137,62 +960,6 @@ function applyImport(rows, currentPeople, currentDepartments) {
   })
 
   return { nextPeople: inactivePeople, nextDepartments: resolvedDepartments }
-}
-
-async function upsertImportToSupabase(rows, people, departments, actor) {
-  const { error: departmentsError } = await supabase
-    .from('departments')
-    .upsert(toDepartmentPayload(departments), { onConflict: 'id' })
-  if (departmentsError) throw departmentsError
-
-  const { error: peopleError } = await supabase.from('people').upsert(toPeoplePayload(people), { onConflict: 'id' })
-  if (peopleError) throw peopleError
-
-  const { error: historyError } = await supabase.from('change_history').insert({
-    action: 'Carga masiva confirmada',
-    target: `${rows.length} filas importadas`,
-    actor,
-  })
-  if (historyError) throw historyError
-}
-
-function toDepartmentPayload(departments) {
-  return departments.map(({ id, name, parent_id, sort_order, status }) => ({
-    id,
-    name,
-    parent_id: parent_id || null,
-    sort_order: sort_order || 0,
-    status: status || 'active',
-    updated_at: new Date().toISOString(),
-  }))
-}
-
-function toPeoplePayload(people) {
-  return people.map((person) => ({
-    id: person.id,
-    full_name: person.full_name,
-    role: person.role,
-    email: normalizeCorporateEmail(person.email, person.full_name),
-    department_id: person.department_id || null,
-    manager_id: person.manager_id || null,
-    status: person.status || 'active',
-    department_sort_order: person.department_sort_order || null,
-    hierarchy_order: person.hierarchy_order || 99,
-    hierarchy_level: person.hierarchy_level || null,
-    subarea: person.subarea || null,
-    group_name: person.group_name || null,
-    global_order: person.global_order || null,
-    group_order: person.group_order || null,
-    source_person_id: person.source_person_id || null,
-    source_parent_id: person.source_parent_id || null,
-    source_row: person.source_row || null,
-    source_pages: person.source_pages || null,
-    match_status: person.match_status || null,
-    match_score: person.match_score ?? null,
-    email_source: person.email_source || null,
-    email_status: person.email_status || null,
-    updated_at: person.updated_at || new Date().toISOString(),
-  }))
 }
 
 function formatDate(value) {

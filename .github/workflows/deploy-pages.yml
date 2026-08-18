@@ -26,7 +26,7 @@ jobs:
       VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL || vars.VITE_SUPABASE_URL }}
       VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY || vars.VITE_SUPABASE_ANON_KEY }}
       VITE_CORPORATE_DOMAIN: ${{ vars.VITE_CORPORATE_DOMAIN || 'epayco.com' }}
-      VITE_ADMIN_EMAIL: ${{ vars.VITE_ADMIN_EMAIL || 'julian.tobon@epayco.com' }}
+      VITE_ENABLE_PUBLIC_ADMIN: ${{ vars.VITE_ENABLE_PUBLIC_ADMIN || 'false' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -39,17 +39,6 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
-
-      - name: Validate Supabase config
-        run: |
-          if [ -z "$VITE_SUPABASE_URL" ]; then
-            echo "Missing VITE_SUPABASE_URL. Add it as a repository secret or variable."
-            exit 1
-          fi
-          if [ -z "$VITE_SUPABASE_ANON_KEY" ]; then
-            echo "Missing VITE_SUPABASE_ANON_KEY. Add it as a repository secret or variable."
-            exit 1
-          fi
 
       - name: Build
         run: npm run build

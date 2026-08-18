@@ -1,6 +1,6 @@
-# Organigrama privado ePayco
+# Organigrama ePayco
 
-Aplicación React para consultar y administrar el organigrama interno de ePayco con React Flow, Supabase Auth y Supabase RLS.
+Aplicación React para consultar el organigrama interno de ePayco con React Flow. La app entra directo al canvas, sin autenticación previa.
 
 ## Ejecutar localmente
 
@@ -9,7 +9,7 @@ npm install
 npm run dev
 ```
 
-Si no existen variables de Supabase, la aplicación inicia en modo demo local con datos importados desde la base maestra. El modo demo solo corre en desarrollo local; los builds de producción no exponen la semilla demo.
+La aplicación incluye una base local generada desde la base maestra para evitar pantallas vacías. Si Supabase está configurado y permite lectura pública, la app sincroniza departamentos y personas desde la base remota.
 
 ## Variables de entorno
 
@@ -19,23 +19,15 @@ Crea `.env.local`:
 VITE_SUPABASE_URL=https://tu-proyecto.supabase.co
 VITE_SUPABASE_ANON_KEY=tu_anon_key
 VITE_CORPORATE_DOMAIN=epayco.com
-VITE_ADMIN_EMAIL=julian.tobon@epayco.com
+VITE_ENABLE_PUBLIC_ADMIN=false
 ```
 
 ## Supabase
 
 1. Ejecuta `supabase/schema.sql` en el SQL editor de Supabase.
 2. Ejecuta `supabase/seed_from_github.sql` para cargar la base inicial del organigrama.
-3. Activa Magic Link o proveedor Google/Microsoft en Supabase Auth.
-4. En Authentication > URL Configuration, configura el Site URL de producción y agrega también las URLs locales de desarrollo.
-5. La regla de lectura permite usuarios autenticados con correo `@epayco.com`.
-6. Solo `julian.tobon@epayco.com` queda como administrador inicial con permisos de carga, edición e historial.
-
-URLs recomendadas de Auth:
-
-- Producción: `https://jt-desing.github.io/organigrama-epayco/`
-- Local: `http://localhost:5173/`
-- Local alterna: `http://127.0.0.1:5173/`
+3. El esquema permite lectura pública de departamentos y personas activas para que el organigrama cargue sin autenticación.
+4. Las escrituras siguen restringidas por RLS a usuarios autenticados/admin si más adelante se reactiva administración remota.
 
 Para validar que la URL y la llave apuntan a un proyecto activo:
 
@@ -43,11 +35,11 @@ Para validar que la URL y la llave apuntan a un proyecto activo:
 npm run check:supabase
 ```
 
-Si el comando falla en DNS, `VITE_SUPABASE_URL` no apunta a un proyecto Supabase activo o el proyecto esta pausado/eliminado. Copia nuevamente la URL desde Supabase > Project Settings > API y actualiza `.env.local` y el secreto `VITE_SUPABASE_URL` en GitHub.
+Si el comando falla en DNS, `VITE_SUPABASE_URL` no apunta a un proyecto Supabase activo o el proyecto esta pausado/eliminado. La app seguirá mostrando la base local incluida.
 
 ## GitHub Pages
 
-El workflow `.github/workflows/deploy-pages.yml` despliega `dist` con GitHub Actions. Configura estos secretos del repositorio antes de usar Pages con Supabase real:
+El workflow `.github/workflows/deploy-pages.yml` despliega `dist` con GitHub Actions. Supabase es opcional; si no configuras estos secretos, la app usa la base local incluida:
 
 - `VITE_SUPABASE_URL`
 - `VITE_SUPABASE_ANON_KEY`
@@ -55,11 +47,11 @@ El workflow `.github/workflows/deploy-pages.yml` despliega `dist` con GitHub Act
 Variables opcionales:
 
 - `VITE_CORPORATE_DOMAIN=epayco.com`
-- `VITE_ADMIN_EMAIL=julian.tobon@epayco.com`
+- `VITE_ENABLE_PUBLIC_ADMIN=false`
 
 ## Carga masiva
 
-El panel administrativo acepta `.xlsx` y `.csv`. Reconoce columnas:
+El panel administrativo acepta `.xlsx` y `.csv`. En producción queda oculto por defecto porque no hay login; solo se muestra si compilas con `VITE_ENABLE_PUBLIC_ADMIN=true`. Reconoce columnas:
 
 - `nombre`, `nombre completo` o `nombre mostrado`
 - `cargo`, `posición` o `nombre posición`

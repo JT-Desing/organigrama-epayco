@@ -72,10 +72,12 @@ alter table public.authorized_users enable row level security;
 alter table public.change_history enable row level security;
 
 -- Supabase projects created after April 2026 may not expose new tables to the
--- Data API automatically. These grants expose the tables to authenticated users;
--- RLS policies below still decide which rows and writes are allowed.
-grant usage on schema public to authenticated;
-grant select on public.departments, public.people, public.authorized_users, public.change_history to authenticated;
+-- Data API automatically. The app no longer uses login, so the organigrama
+-- needs public read access for active departments and people. RLS policies
+-- below still decide which rows and writes are allowed.
+grant usage on schema public to anon, authenticated;
+grant select on public.departments, public.people to anon, authenticated;
+grant select on public.authorized_users, public.change_history to authenticated;
 grant insert, update, delete on public.departments, public.people, public.authorized_users, public.change_history to authenticated;
 
 create schema if not exists private;
@@ -140,11 +142,13 @@ grant execute on function private.is_authorized() to authenticated;
 grant execute on function private.is_admin() to authenticated;
 
 drop policy if exists "authorized users read departments" on public.departments;
+drop policy if exists "public read active departments" on public.departments;
 drop policy if exists "admins write departments" on public.departments;
 drop policy if exists "admins insert departments" on public.departments;
 drop policy if exists "admins update departments" on public.departments;
 drop policy if exists "admins delete departments" on public.departments;
 drop policy if exists "authorized users read people" on public.people;
+drop policy if exists "public read active people" on public.people;
 drop policy if exists "admins write people" on public.people;
 drop policy if exists "admins insert people" on public.people;
 drop policy if exists "admins update people" on public.people;
@@ -156,6 +160,11 @@ drop policy if exists "admins update authorization" on public.authorized_users;
 drop policy if exists "admins delete authorization" on public.authorized_users;
 drop policy if exists "authorized users read history" on public.change_history;
 drop policy if exists "admins write history" on public.change_history;
+
+create policy "public read active departments"
+on public.departments for select
+to anon, authenticated
+using (status = 'active');
 
 create policy "authorized users read departments"
 on public.departments for select
@@ -177,6 +186,11 @@ create policy "admins delete departments"
 on public.departments for delete
 to authenticated
 using (private.is_admin());
+
+create policy "public read active people"
+on public.people for select
+to anon, authenticated
+using (status = 'active');
 
 create policy "authorized users read people"
 on public.people for select
